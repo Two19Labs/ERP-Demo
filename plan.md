@@ -179,14 +179,14 @@ Let the owner maintain the master data required before bill tracking works.
 
 ## Build
 
-- [ ] Build Stock Items screen.
-- [ ] Add/edit stock item.
-- [ ] Set category, unit, and low-stock threshold.
-- [ ] Activate/deactivate item.
-- [ ] Build Vendors screen.
-- [ ] Add/edit vendor.
-- [ ] Store vendor contact details and notes.
-- [ ] Seed generic demo data.
+- [x] Build Stock Items screen.
+- [x] Add/edit stock item.
+- [x] Set category, unit, and low-stock threshold.
+- [x] Activate/deactivate item.
+- [x] Build Vendors screen.
+- [x] Add/edit vendor.
+- [x] Store vendor contact details and notes.
+- [x] Seed generic demo data.
 
 ## Demo Stock Items
 

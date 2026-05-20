@@ -34,7 +34,7 @@
   <div class="content-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Phase 0</p>
+        <p class="eyebrow">Phase 2</p>
         <h2>Stock Setup</h2>
       </div>
 
@@ -52,7 +52,7 @@
         <div>
           <p class="eyebrow">Reference data</p>
           <h3 id="welcomeTitle">Loading stock setup</h3>
-          <p id="welcomeText" class="supporting-text">We are checking your access, then loading stock items, ingredients, and suppliers.</p>
+          <p id="welcomeText" class="supporting-text">We are checking your access, then loading stock items and approved suppliers.</p>
         </div>
 
         <div class="hero-controls">
@@ -67,13 +67,8 @@
       <section class="status-grid">
         <article class="status-card">
           <p class="card-label">Stock items</p>
-          <strong id="dishCountValue">-</strong>
+          <strong id="stockItemCountValue">-</strong>
           <span>Items the restaurant buys, stores, and tracks.</span>
-        </article>
-        <article class="status-card">
-          <p class="card-label">Ingredients</p>
-          <strong id="ingredientCountValue">-</strong>
-          <span>Raw materials and supplies used for purchase tracking.</span>
         </article>
         <article class="status-card">
           <p class="card-label">Vendors</p>
@@ -92,8 +87,7 @@
         </div>
 
         <div class="tab-strip" role="tablist" aria-label="Master data modules">
-          <button class="tab-button tab-button-active" id="tabDishes" data-tab="dishes" type="button">Stock Items</button>
-          <button class="tab-button" id="tabIngredients" data-tab="ingredients" type="button">Ingredients</button>
+          <button class="tab-button tab-button-active" id="tabStockItems" data-tab="stock_items" type="button">Stock Items</button>
           <button class="tab-button" id="tabVendors" data-tab="vendors" type="button">Vendors</button>
         </div>
 
@@ -104,7 +98,7 @@
             <div class="panel-header">
               <div>
                 <p class="eyebrow" id="listEyebrow">Shared master list</p>
-          <h3 id="listTitle">Stock items</h3>
+                <h3 id="listTitle">Stock items</h3>
               </div>
             </div>
             <div id="listBody" class="record-list">
@@ -122,16 +116,16 @@
 
             <div id="formHint" class="form-hint"></div>
 
-            <form id="dishForm" class="data-form">
-              <input type="hidden" id="dishId">
+            <form id="stockItemForm" class="data-form">
+              <input type="hidden" id="stockItemId">
               <div class="form-group">
-                <label for="dishName">Stock item name</label>
-                <input id="dishName" class="form-control" type="text" placeholder="Tomatoes" required>
+                <label for="stockItemName">Stock item name</label>
+                <input id="stockItemName" class="form-control" type="text" placeholder="Tomatoes" required>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
-                  <label for="dishCategory">Category</label>
-                  <select id="dishCategory" class="select-control" required>
+                  <label for="stockItemCategory">Category</label>
+                  <select id="stockItemCategory" class="select-control" required>
                     <option value="Vegetables">Vegetables</option>
                     <option value="Dairy">Dairy</option>
                     <option value="Meat / Protein">Meat / Protein</option>
@@ -144,49 +138,8 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="dishSortOrder">Low stock threshold</label>
-                  <input id="dishSortOrder" class="form-control" type="number" min="1" value="10" required>
-                </div>
-              </div>
-              <div class="toggle-row">
-                <label class="toggle-control">
-                  <input id="dishIsJain" type="checkbox">
-                  <span>Track closely</span>
-                </label>
-                <label class="toggle-control">
-                  <input id="dishIsActive" type="checkbox" checked>
-                  <span>Active</span>
-                </label>
-              </div>
-              <div class="form-actions">
-                <button class="btn btn-primary" type="submit">Save stock item</button>
-                <button class="btn btn-outline" id="dishResetBtn" type="button">New stock item</button>
-              </div>
-            </form>
-
-            <form id="ingredientForm" class="data-form hidden">
-              <input type="hidden" id="ingredientId">
-              <div class="form-group">
-                <label for="ingredientName">Ingredient name</label>
-                <input id="ingredientName" class="form-control" type="text" placeholder="Tomatoes" required>
-              </div>
-              <div class="two-column-fields">
-                <div class="form-group">
-                  <label for="ingredientCategory">Category</label>
-                  <select id="ingredientCategory" class="select-control" required>
-                    <option value="Grain">Grain</option>
-                    <option value="Dairy">Dairy</option>
-                    <option value="Spice">Spice</option>
-                    <option value="Vegetable">Vegetable</option>
-                    <option value="Oil">Oil</option>
-                    <option value="Sweetener">Sweetener</option>
-                    <option value="Pulse">Pulse</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="ingredientUnit">Base unit</label>
-                  <select id="ingredientUnit" class="select-control" required>
+                  <label for="stockItemDefaultUnit">Default Unit</label>
+                  <select id="stockItemDefaultUnit" class="select-control" required>
                     <option value="kg">kg</option>
                     <option value="g">g</option>
                     <option value="litre">litre</option>
@@ -196,15 +149,25 @@
                   </select>
                 </div>
               </div>
-              <div class="toggle-row">
-                <label class="toggle-control">
-                  <input id="ingredientIsActive" type="checkbox" checked>
-                  <span>Active</span>
-                </label>
+              <div class="two-column-fields">
+                <div class="form-group">
+                  <label for="stockItemLowStockThreshold">Low stock threshold</label>
+                  <input id="stockItemLowStockThreshold" class="form-control" type="number" min="0" step="any" value="10" required>
+                </div>
+                <div class="form-group toggle-row" style="margin-top: 1.5rem;">
+                  <label class="toggle-control">
+                    <input id="stockItemIsActive" type="checkbox" checked>
+                    <span>Active</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="stockItemNotes">Notes</label>
+                <textarea id="stockItemNotes" class="form-control text-area-control" rows="3" placeholder="Storage instructions, typical shelf life, or usage notes"></textarea>
               </div>
               <div class="form-actions">
-                <button class="btn btn-primary" type="submit">Save ingredient</button>
-                <button class="btn btn-outline" id="ingredientResetBtn" type="button">New ingredient</button>
+                <button class="btn btn-primary" type="submit">Save stock item</button>
+                <button class="btn btn-outline" id="stockItemResetBtn" type="button">New stock item</button>
               </div>
             </form>
 
@@ -223,6 +186,10 @@
                   <label for="vendorPhone">Phone</label>
                   <input id="vendorPhone" class="form-control" type="text" placeholder="+91 98XXXXXXXX">
                 </div>
+              </div>
+              <div class="form-group">
+                <label for="vendorCategorySupplied">Category Supplied</label>
+                <input id="vendorCategorySupplied" class="form-control" type="text" placeholder="Vegetables, Dairy, etc.">
               </div>
               <div class="form-group">
                 <label for="vendorNotes">Notes</label>
