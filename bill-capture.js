@@ -11,7 +11,8 @@ const appState = {
   currentDraft: null,
   activeTab: "paste",
   uploadedFile: null,
-  uploadUrl: null
+  uploadUrl: null,
+  hfApiKey: null
 };
 
 let supabaseClient;
@@ -264,6 +265,21 @@ async function loadCaptureMasterData() {
     .select("*")
     .eq("is_active", true)
     .order("name", { ascending: true });
+
+  // Fetch the HF API Key from Supabase config
+  try {
+    const { data: configData } = await supabaseClient
+      .from("system_config")
+      .select("value")
+      .eq("key", "hf_api_key")
+      .maybeSingle();
+
+    if (configData) {
+      appState.hfApiKey = configData.value;
+    }
+  } catch (configError) {
+    console.warn("Failed to load hf_api_key from Supabase system_config table:", configError);
+  }
 
   appState.records.stock_items = stockItems || [];
   appState.records.vendors = vendors || [];
@@ -756,7 +772,7 @@ async function handleParseText() {
   parseBtn.disabled = true;
   parseBtn.textContent = "Parsing (AI)...";
 
-  const apiKey = localStorage.getItem("hf_api_key") || HF_DEFAULT_API_KEY;
+  const apiKey = localStorage.getItem("hf_api_key") || appState.hfApiKey || HF_DEFAULT_API_KEY;
 
   let parsed = null;
   if (apiKey) {
