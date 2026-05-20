@@ -981,12 +981,6 @@ async function handleOcrExtraction() {
     await new Promise(r => setTimeout(r, 400));
     setStep("stepMap", "✅", false, true);
 
-    // Auto-delete from Supabase storage per user request to avoid excess data
-    if (!uploadErr) {
-      await supabaseClient.storage.from('bills').remove([uniqueName]);
-    }
-    appState.uploadUrl = null; // Prevent saving broken link to DB
-
     // Generate mock OCR data
     const mockData = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
     
@@ -1012,7 +1006,7 @@ async function handleOcrExtraction() {
     document.getElementById("extractedBillDate").value = mockData.billDate;
 
     // Render items list
-    renderExtractedLinesTable();
+    renderExtractedItems();
 
     // Render visual attachment box
     const localViewUrl = URL.createObjectURL(file);

@@ -123,7 +123,6 @@
                   <th style="padding: 8px 4px; text-align: right;">Quantity</th>
                   <th style="padding: 8px 4px;">Unit</th>
                   <th style="padding: 8px 4px;">Notes / Reason</th>
-                  <th style="padding: 8px 4px; text-align: center;"></th>
                 </tr>
               </thead>
               <tbody id="ledgerBody">
@@ -199,20 +198,7 @@
     </main>
   </div>
 
-  <div id="globalDeleteModal" class="global-modal-overlay">
-    <div class="global-modal-content">
-      <div class="global-modal-icon">⚠️</div>
-      <h3 class="global-modal-title" id="deleteModalTitle">Confirm Deletion</h3>
-      <p class="global-modal-text" id="deleteModalText">Are you sure you want to delete this record? This action cannot be undone.</p>
-      <div class="global-modal-actions">
-        <button id="cancelDeleteBtn" class="btn btn-outline">Cancel</button>
-        <button id="confirmDeleteBtn" class="btn btn-danger">Yes, Delete</button>
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
   <script src="stock-ledger.js"></script>
 </body>
 </html>
