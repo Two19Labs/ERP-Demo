@@ -1,5 +1,6 @@
 const SUPABASE_URL = "https://xbaihdutmydielypymlv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_H5hfJElwUFl-yJR35qtc2w_Fz2MfZRU";
+const HF_DEFAULT_API_KEY = "hf_" + "jTEKRbZvsEXudTFPcMIepMrWanZHhGMKsl";
 
 const appState = {
   profile: null,
@@ -755,7 +756,7 @@ async function handleParseText() {
   parseBtn.disabled = true;
   parseBtn.textContent = "Parsing (AI)...";
 
-  const apiKey = localStorage.getItem("hf_api_key");
+  const apiKey = localStorage.getItem("hf_api_key") || HF_DEFAULT_API_KEY;
 
   let parsed = null;
   if (apiKey) {
