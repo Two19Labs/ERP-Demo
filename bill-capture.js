@@ -631,7 +631,7 @@ async function saveCapturedBill() {
         vendor_id: vendorId,
         bill_date: billDate,
         bill_number: billNumber || null,
-        source: "whatsapp",
+        source: "whatsapp_paste",
         original_text: rawText,
         total: grandTotal,
         status: "pending_review",
