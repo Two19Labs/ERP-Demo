@@ -497,7 +497,29 @@ body {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.66);
   border: 1px solid rgba(34, 27, 24, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
+
+.record-card:hover {
+  border-color: var(--saffron);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2.5px);
+  box-shadow: 0 6px 18px rgba(37, 111, 125, 0.06);
+}
+
+.record-card-selected {
+  border-color: var(--saffron) !important;
+  background: rgba(37, 111, 125, 0.07) !important;
+  box-shadow: 0 4px 14px rgba(37, 111, 125, 0.09) !important;
+}
+
+#formPanel {
+  position: sticky;
+  top: 30px;
+  align-self: start;
+}
+
 
 .selected-card,
 .overview-card {

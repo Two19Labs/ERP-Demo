@@ -4,6 +4,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_H5hfJElwUFl-yJR35qtc2w_Fz2MfZRU";
 const appState = {
   profile: null,
   currentTab: "stock_items",
+  selectedRecordId: null,
   setupError: "",
   records: {
     stock_items: [],
@@ -74,6 +75,8 @@ function wireDashboardEvents() {
 
   document.getElementById("addRecordBtn")?.addEventListener("click", () => {
     if (appState.profile?.role_code !== "owner") return;
+    appState.selectedRecordId = null;
+    renderListPanel();
     if (appState.currentTab === "stock_items") {
       resetStockItemForm();
       showForm("stock_items");
@@ -209,6 +212,7 @@ function updateSummaryCounts() {
 
 function renderSetupAlert() {
   const alert = document.getElementById("setupAlert");
+  if (!alert) return;
   if (!appState.setupError) {
     alert.classList.add("hidden");
     alert.textContent = "";
@@ -222,6 +226,7 @@ function renderSetupAlert() {
 
 function switchTab(tabName) {
   appState.currentTab = tabName;
+  appState.selectedRecordId = null;
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.classList.toggle("tab-button-active", button.dataset.tab === tabName);
   });
@@ -308,58 +313,68 @@ function renderListPanel() {
   }
 
   listBody.innerHTML = config.records.map(config.renderer).join("");
-  bindEditButtons();
 }
 
-function bindEditButtons() {
-  document.querySelectorAll("[data-edit-type]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const { editType, editId } = button.dataset;
-      if (editType === "stock_item") {
-        populateStockItemForm(editId);
-        showForm("stock_items");
-      } else if (editType === "vendor") {
-        populateVendorForm(editId);
-        showForm("vendors");
-      }
-    });
-  });
-}
+window.selectRecord = function (type, id) {
+  appState.selectedRecordId = id;
+  if (type === "stock_item") {
+    populateStockItemForm(id);
+    showForm("stock_items");
+  } else {
+    populateVendorForm(id);
+    showForm("vendors");
+  }
+  renderListPanel();
+};
 
 function renderStockItemCard(item) {
-  const canEdit = appState.profile?.role_code === "owner";
+  const isOwner = appState.profile?.role_code === "owner";
+  const actionText = isOwner ? "Edit" : "View";
+  const isSelected = appState.selectedRecordId === item.id;
+  const statusClass = item.is_active ? "record-pill-live" : "record-pill-muted";
+  const statusText = item.is_active ? "Active" : "Inactive";
+
   return `
-    <article class="record-card">
-      <div class="record-main">
-        <div>
-          <h4>${item.name}</h4>
-          <p>${item.category} - Default Unit: ${item.default_unit} - Low stock threshold: ${item.low_stock_threshold}</p>
-          ${item.notes ? `<small style="color: var(--color-text-muted); display: block; margin-top: 4px;">${item.notes}</small>` : ""}
+    <article class="record-card ${isSelected ? 'record-card-selected' : ''}" onclick="window.selectRecord('stock_item', '${item.id}')">
+      <div class="record-main" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; width: 100%;">
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 6px 0; font-size: 1rem; font-weight: 700; color: var(--ink);">${item.name}</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--clay); line-height: 1.4;">
+            <span style="font-weight: 600; color: var(--saffron);">${item.category}</span> &bull; Base Unit: <strong>${item.default_unit}</strong> &bull; Alert at: <strong>${item.low_stock_threshold}</strong>
+          </p>
+          ${item.notes ? `<small style="color: var(--clay); display: block; margin-top: 6px; font-size: 0.78rem; opacity: 0.85; line-height: 1.3;">${item.notes}</small>` : ""}
         </div>
-        <div class="pill-row">
-          <span class="record-pill ${item.is_active ? "record-pill-live" : "record-pill-muted"}">${item.is_active ? "Active" : "Inactive"}</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; shrink: 0;">
+          <span class="record-pill ${statusClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.05);">${statusText}</span>
+          <span class="btn btn-outline btn-small" style="font-size: 0.72rem; padding: 4px 8px; height: auto; border-radius: 4px; pointer-events: none;">${actionText}</span>
         </div>
       </div>
-      ${canEdit ? `<button class="btn btn-outline btn-small" type="button" data-edit-type="stock_item" data-edit-id="${item.id}">Edit</button>` : ""}
     </article>
   `;
 }
 
 function renderVendorCard(vendor) {
-  const secondaryLine = [vendor.contact_name, vendor.phone].filter(Boolean).join(" - ");
-  const canEdit = appState.profile?.role_code === "owner";
+  const isOwner = appState.profile?.role_code === "owner";
+  const actionText = isOwner ? "Edit" : "View";
+  const isSelected = appState.selectedRecordId === vendor.id;
+  const secondaryLine = [vendor.contact_name, vendor.phone].filter(Boolean).join(" &bull; ");
+  const statusClass = vendor.is_active ? "record-pill-live" : "record-pill-muted";
+  const statusText = vendor.is_active ? "Active" : "Inactive";
+
   return `
-    <article class="record-card">
-      <div class="record-main">
-        <div>
-          <h4>${vendor.name}</h4>
-          <p>${secondaryLine || "No contact details yet"}</p>
-          ${vendor.category_supplied ? `<small style="display: block; margin-top: 4px;">Supplies: ${vendor.category_supplied}</small>` : ""}
-          ${vendor.notes ? `<small style="color: var(--color-text-muted); display: block; margin-top: 4px;">${vendor.notes}</small>` : ""}
+    <article class="record-card ${isSelected ? 'record-card-selected' : ''}" onclick="window.selectRecord('vendor', '${vendor.id}')">
+      <div class="record-main" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; width: 100%;">
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 6px 0; font-size: 1rem; font-weight: 700; color: var(--ink);">${vendor.name}</h4>
+          ${secondaryLine ? `<p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--clay); line-height: 1.4;">${secondaryLine}</p>` : ""}
+          ${vendor.category_supplied ? `<small style="display: block; margin-top: 4px; font-size: 0.78rem; color: var(--leaf); font-weight: 600;">Supplies: ${vendor.category_supplied}</small>` : ""}
+          ${vendor.notes ? `<small style="color: var(--clay); display: block; margin-top: 6px; font-size: 0.78rem; opacity: 0.85; line-height: 1.3;">${vendor.notes}</small>` : ""}
         </div>
-        <span class="record-pill ${vendor.is_active ? "record-pill-live" : "record-pill-muted"}">${vendor.is_active ? "Active" : "Inactive"}</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; shrink: 0;">
+          <span class="record-pill ${statusClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.05);">${statusText}</span>
+          <span class="btn btn-outline btn-small" style="font-size: 0.72rem; padding: 4px 8px; height: auto; border-radius: 4px; pointer-events: none;">${actionText}</span>
+        </div>
       </div>
-      ${canEdit ? `<button class="btn btn-outline btn-small" type="button" data-edit-type="vendor" data-edit-id="${vendor.id}">Edit</button>` : ""}
     </article>
   `;
 }
@@ -392,14 +407,18 @@ function resetStockItemForm() {
   document.getElementById("stockItemForm").reset();
   document.getElementById("stockItemId").value = "";
   document.getElementById("stockItemIsActive").checked = true;
+  appState.selectedRecordId = null;
   showPlaceholder();
+  renderListPanel();
 }
 
 function resetVendorForm() {
   document.getElementById("vendorForm").reset();
   document.getElementById("vendorId").value = "";
   document.getElementById("vendorIsActive").checked = true;
+  appState.selectedRecordId = null;
   showPlaceholder();
+  renderListPanel();
 }
 
 async function saveStockItem(event) {
