@@ -346,7 +346,7 @@ function parseWhatsAppText(text, vendors, stockItems) {
 
   // 2. Scan for bill number
   for (const line of lines) {
-    const numMatch = line.match(/(?:bill|invoice|inv|no|num|number)[:\s\.\#]+([a-zA-Z0-9\-]+)/i);
+    const numMatch = line.match(/(?:bill\s+number|bill\s+no|invoice\s+number|invoice\s+no|inv\s+no|inv\s+number|bill|invoice|inv|no|num|number)[:\s\.\#]+([a-zA-Z0-9\-]+)/i);
     if (numMatch && !line.toLowerCase().includes("total")) {
       result.billNumber = numMatch[1];
       break;
