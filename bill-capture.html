@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Stock Control - WhatsApp Bill Capture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">Restaurant Stock Control</p>
+      <h1>Purchases, stock, and suspicious bills in one place</h1>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a class="nav-item nav-link" href="master-data.html">
+        <span>Stock Setup</span>
+      </a>
+      <a class="nav-item nav-link" href="dashboard.html">
+        <span>Stock Dashboard</span>
+      </a>
+      <a class="nav-item nav-item-active nav-link" href="bill-capture.html">
+        <span>Bill Capture</span>
+      </a>
+      <a class="nav-item nav-link" href="purchase-register.html">
+        <span>Purchase Register</span>
+      </a>
+      <a class="nav-item nav-link" href="stock-ledger.html">
+        <span>Stock Ledger</span>
+      </a>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 7">
+        <span>Alerts</span>
+        <span class="nav-badge">Phase 7</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-note">
+      <p class="note-label">Current goal</p>
+      <p id="sidebarScope">Paste unstructured bill messages or supplier notes to quickly digitize stock entry logs.</p>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Phase 5</p>
+        <h2>WhatsApp Bill Capture</h2>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <span id="userEmail"></span>
+          <span id="userRole" class="role-pill"></span>
+        </div>
+        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="content-main">
+      <section class="hero-panel">
+        <div>
+          <p class="eyebrow">Pasted Invoice Digitization</p>
+          <h3 id="welcomeTitle">Simulated Bill Capture</h3>
+          <p id="welcomeText" class="supporting-text">Paste supplier messages, WhatsApp logs, or receipt transcripts here. The system will extract line items, match them with your stock database, and prepare a draft invoice.</p>
+        </div>
+      </section>
+
+      <div id="setupAlert" class="setup-alert hidden"></div>
+
+      <div class="workspace-grid" style="margin-top: 20px;">
+        <!-- Left Column: Paste Input Workspace -->
+        <section class="panel panel-soft">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Data Entry</p>
+              <h3>Paste Invoice Text</h3>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="rawBillText">WhatsApp Chat Copy / Raw Invoice Text <span class="required">*</span></label>
+            <textarea id="rawBillText" class="form-control text-area-control" style="min-height: 250px; font-family: monospace; font-size: 0.9rem;" placeholder="Paste text here... e.g.:
+Fresh Market Supplier
+Tomato 10 kg x 42 = 420
+Onion 8 kg x 30 = 240
+Total 660"></textarea>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="demoBtn1" class="btn btn-outline btn-small" type="button">Load WhatsApp Demo</button>
+              <button id="demoBtn2" class="btn btn-outline btn-small" type="button">Load Alternative Demo</button>
+            </div>
+            <button id="parseBillBtn" class="btn btn-primary" type="button">Parse Bill & Extract Lines</button>
+          </div>
+        </section>
+
+        <!-- Right Column: Interactive Matches Preview -->
+        <section class="panel panel-soft">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Draft Verification</p>
+              <h3>Extracted Bill Preview</h3>
+            </div>
+          </div>
+
+          <!-- Empty Placeholder -->
+          <div id="draftPlaceholder" class="placeholder-view">
+            <div class="placeholder-icon">📄</div>
+            <h4>No draft extracted yet</h4>
+            <p>Paste supplier bill text on the left and click "Parse Bill & Extract Lines" to view the matched draft here.</p>
+          </div>
+
+          <!-- Parsed Bill Form (Initially hidden) -->
+          <form id="extractedBillForm" class="details-form hidden" onsubmit="return false;">
+            <div class="form-group">
+              <label for="extractedVendorId">Vendor <span class="required">*</span></label>
+              <select id="extractedVendorId" class="select-control" required>
+                <option value="">Select a vendor...</option>
+              </select>
+            </div>
+
+            <div class="two-column-fields">
+              <div class="form-group">
+                <label for="extractedBillNumber">Bill / Invoice Number</label>
+                <input id="extractedBillNumber" class="form-control" type="text" placeholder="e.g. IN-9923">
+              </div>
+              <div class="form-group">
+                <label for="extractedBillDate">Bill Date <span class="required">*</span></label>
+                <input id="extractedBillDate" class="form-control" type="date" required>
+              </div>
+            </div>
+
+            <div class="panel-header-spread" style="margin-top: 15px; margin-bottom: 8px;">
+              <p class="eyebrow" style="margin-bottom: 0;">Extracted Line Items</p>
+              <span id="matchStatusSummary" class="mini-badge">Verifying Matches</span>
+            </div>
+
+            <div class="bill-items-table-container" style="overflow-x: auto; margin-bottom: 15px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.4);">
+              <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--line); font-size: 0.8rem; color: var(--clay); text-align: left; background: rgba(255,255,255,0.6);">
+                    <th style="padding: 8px; width: 35%;">Raw Text Name</th>
+                    <th style="padding: 8px; width: 35%;">Stock Item Match</th>
+                    <th style="padding: 8px; text-align: right; width: 15%;">Qty</th>
+                    <th style="padding: 8px; text-align: right; width: 15%;">Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="extractedItemsBody">
+                  <!-- Generated dynamically in bill-capture.js -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="summary-stack" style="background: rgba(255, 255, 255, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 20px;">
+              <div class="summary-row" style="font-size: 0.9rem;">
+                <span>Parsed Total (from text):</span>
+                <strong id="parsedTotalText" style="color: var(--ink);">₹0.00</strong>
+              </div>
+              <div class="summary-row" style="font-size: 0.9rem;">
+                <span>Calculated Total (sum of lines):</span>
+                <strong id="calculatedTotalText" style="color: var(--saffron);">₹0.00</strong>
+              </div>
+              <div id="totalMismatchWarning" class="record-pill record-pill-rejected hidden" style="font-size: 0.75rem; text-align: center; padding: 6px; width: 100%; border-radius: 4px; font-weight: 500; display: block; margin-top: 8px;">
+                ⚠️ Sum of lines does not match parsed bill total!
+              </div>
+              <div id="totalMatchBadge" class="record-pill record-pill-live hidden" style="font-size: 0.75rem; text-align: center; padding: 6px; width: 100%; border-radius: 4px; font-weight: 500; display: block; margin-top: 8px;">
+                ✓ Sum of lines matches parsed bill total.
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button id="saveCapturedBillBtn" class="btn btn-primary" type="button" style="flex: 1; justify-content: center;">Approve & Save Bill</button>
+              <button id="clearCapturedBillBtn" class="btn btn-outline" type="button">Clear Form</button>
+            </div>
+            
+            <div id="saveFeedback" class="inline-feedback hidden" style="margin-top: 15px; text-align: center;"></div>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="bill-capture.js"></script>
+</body>
+</html>
