@@ -129,7 +129,9 @@ async function setupDashboard(user) {
 
   renderAccessCopy();
   await loadActiveAlertsBadge();
-  await loadDashboardData();
+  if (document.getElementById("valuationDisplay")) {
+    await loadDashboardData();
+  }
 }
 
 async function fetchCurrentUserProfile(userId) {
