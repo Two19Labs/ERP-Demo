@@ -104,7 +104,12 @@
           <!-- Tab 1: WhatsApp Chat/Text Paste -->
           <div id="pasteWorkspace" class="capture-workspace">
             <div class="form-group" style="margin-top: 15px;">
-              <label for="rawBillText">WhatsApp Chat Copy / Raw Invoice Text <span class="required">*</span></label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="rawBillText" style="margin-bottom: 0;">WhatsApp Chat Copy / Raw Invoice Text <span class="required">*</span></label>
+                <button id="voiceInputBtn" class="btn btn-outline btn-small" type="button" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 0.8rem; border-radius: 20px; transition: all 0.3s ease;">
+                  <span id="voiceMicIcon">🎤</span> <span id="voiceBtnText">Voice Input</span>
+                </button>
+              </div>
               <textarea id="rawBillText" class="form-control text-area-control" style="min-height: 250px; font-family: monospace; font-size: 0.9rem;" placeholder="Paste unstructured bill text here... e.g.:
 Fresh Market Supplier
 I bought tomato for 10 rupees per kilo and I bought 100 kilos

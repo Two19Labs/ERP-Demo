@@ -209,6 +209,91 @@ Total 3200`;
       chevron.textContent = isHidden ? "▼" : "▲";
     }
   });
+
+  // Speech-to-Text handler
+  const voiceBtn = document.getElementById("voiceInputBtn");
+  const voiceBtnText = document.getElementById("voiceBtnText");
+  const voiceMicIcon = document.getElementById("voiceMicIcon");
+  const rawBillText = document.getElementById("rawBillText");
+
+  let recognition = null;
+  let isListening = false;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (SpeechRecognition && voiceBtn) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      isListening = true;
+      voiceBtn.classList.add("recording");
+      voiceBtnText.textContent = "Listening... Click to stop";
+      voiceMicIcon.textContent = "🛑";
+      if (window.showToast) {
+        window.showToast("Listening... speak your order clear and loud.", "info");
+      }
+    };
+
+    recognition.onresult = (e) => {
+      const transcript = e.results[e.results.length - 1][0].transcript;
+      if (rawBillText) {
+        const spacer = rawBillText.value.trim() ? "\n" : "";
+        rawBillText.value = rawBillText.value.trim() + spacer + transcript.trim();
+        rawBillText.dispatchEvent(new Event('input'));
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.error("Speech recognition error:", e.error);
+      if (e.error !== 'no-speech') {
+        if (window.showToast) {
+          window.showToast(`Speech Error: ${e.error}`, "error");
+        }
+      }
+      stopListening();
+    };
+
+    recognition.onend = () => {
+      stopListening();
+    };
+
+    const startListening = () => {
+      try {
+        recognition.start();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    const stopListening = () => {
+      isListening = false;
+      if (voiceBtn) {
+        voiceBtn.classList.remove("recording");
+      }
+      if (voiceBtnText) {
+        voiceBtnText.textContent = "Voice Input";
+      }
+      if (voiceMicIcon) {
+        voiceMicIcon.textContent = "🎤";
+      }
+      try {
+        recognition.stop();
+      } catch (err) {}
+    };
+
+    voiceBtn.addEventListener("click", () => {
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    });
+  } else if (voiceBtn) {
+    voiceBtn.style.display = "none";
+  }
 }
 
 async function setupCapture(user) {
