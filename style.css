@@ -674,6 +674,126 @@ body {
   animation: fadeIn 0.5s ease forwards;
 }
 
+/* Onboarding, Badges, Placeholders, Helpers */
+.nav-badge {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #b8cac5;
+  font-weight: normal;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.onboarding-guide {
+  background: linear-gradient(135deg, rgba(37, 111, 125, 0.08), rgba(47, 125, 95, 0.08));
+  border: 1px dashed rgba(37, 111, 125, 0.35);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.onboarding-guide h4 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--saffron);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.onboarding-guide-close {
+  background: none;
+  border: none;
+  color: var(--clay);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 4px;
+  transition: color 0.2s ease;
+}
+.onboarding-guide-close:hover {
+  color: var(--danger-color);
+}
+.onboarding-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+.onboarding-step {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(30, 37, 40, 0.06);
+}
+.onboarding-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--saffron);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.onboarding-step h5 {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+.onboarding-step p {
+  font-size: 0.8rem;
+  color: var(--clay);
+  line-height: 1.3;
+}
+.input-helper {
+  font-size: 0.76rem;
+  color: var(--clay);
+  margin-top: 4px;
+  display: block;
+  line-height: 1.3;
+}
+.placeholder-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  height: 100%;
+  min-height: 280px;
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(250, 252, 251, 0.4);
+}
+.placeholder-icon {
+  font-size: 2.2rem;
+  color: var(--clay);
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+.placeholder-view h4 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+.placeholder-view p {
+  font-size: 0.85rem;
+  color: var(--clay);
+  max-width: 32ch;
+  line-height: 1.3;
+}
+
 @media (max-width: 1024px) {
   .app-shell {
     flex-direction: column;

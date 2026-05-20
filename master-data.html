@@ -17,12 +17,28 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="dashboard.html">Stock Dashboard</a>
-      <a class="nav-item nav-item-active nav-link" href="master-data.html">Stock Setup</a>
-      <button class="nav-item" type="button" disabled>Bill Capture</button>
-      <button class="nav-item" type="button" disabled>Purchase Register</button>
-      <button class="nav-item" type="button" disabled>Stock Ledger</button>
-      <button class="nav-item" type="button" disabled>Alerts</button>
+      <a class="nav-item nav-link" href="dashboard.html">
+        <span>Stock Dashboard</span>
+      </a>
+      <a class="nav-item nav-item-active nav-link" href="master-data.html">
+        <span>Stock Setup</span>
+      </a>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 5">
+        <span>Bill Capture</span>
+        <span class="nav-badge">Phase 5</span>
+      </button>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 3">
+        <span>Purchase Register</span>
+        <span class="nav-badge">Phase 3</span>
+      </button>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 4">
+        <span>Stock Ledger</span>
+        <span class="nav-badge">Phase 4</span>
+      </button>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 7">
+        <span>Alerts</span>
+        <span class="nav-badge">Phase 7</span>
+      </button>
     </nav>
 
     <div class="sidebar-note">
@@ -48,6 +64,28 @@
     </header>
 
     <main class="content-main">
+      <div id="onboardingGuide" class="onboarding-guide animate-fade">
+        <h4>
+          <span>Owner's Quick Start Guide</span>
+          <button id="closeOnboardingBtn" class="onboarding-guide-close" type="button" title="Dismiss Guide">&times;</button>
+        </h4>
+        <p>Welcome to your stock control system! Follow this path to unlock automated bill checks and inventory tracking:</p>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <h5><span class="onboarding-step-num">1</span>Catalog Setup</h5>
+            <p>Create your <strong>Stock Items</strong> and <strong>Approved Vendors</strong> on this page to build your reference list.</p>
+          </div>
+          <div class="onboarding-step">
+            <h5><span class="onboarding-step-num">2</span>Manual & Chat Capture</h5>
+            <p>Paste text bills or type line items (Phase 3 & 5) which are held as <strong>Pending Review</strong>.</p>
+          </div>
+          <div class="onboarding-step">
+            <h5><span class="onboarding-step-num">3</span>Approve & Track</h5>
+            <p>Review rates for price inflation. Once approved, the stock ledger is automatically updated (Phase 4).</p>
+          </div>
+        </div>
+      </div>
+
       <section class="hero-panel">
         <div>
           <p class="eyebrow">Reference data</p>
@@ -95,11 +133,12 @@
 
         <div class="master-grid">
           <section class="panel panel-soft" id="listPanel">
-            <div class="panel-header">
+            <div class="panel-header panel-header-spread">
               <div>
                 <p class="eyebrow" id="listEyebrow">Shared master list</p>
                 <h3 id="listTitle">Stock items</h3>
               </div>
+              <button id="addRecordBtn" class="btn btn-primary btn-small" type="button">+ New Stock Item</button>
             </div>
             <div id="listBody" class="record-list">
               <p class="summary-empty">Loading records.</p>
@@ -116,11 +155,18 @@
 
             <div id="formHint" class="form-hint"></div>
 
-            <form id="stockItemForm" class="data-form">
+            <div id="detailsPlaceholder" class="placeholder-view">
+              <div class="placeholder-icon">&#128221;</div>
+              <h4>No record selected</h4>
+              <p id="placeholderText">Select a stock item from the list to view and edit details, or click the button above the list to create a new one.</p>
+            </div>
+
+            <form id="stockItemForm" class="data-form hidden">
               <input type="hidden" id="stockItemId">
               <div class="form-group">
                 <label for="stockItemName">Stock item name</label>
                 <input id="stockItemName" class="form-control" type="text" placeholder="Tomatoes" required>
+                <span class="input-helper">The name you use to identify the product (e.g. Tomatoes). Must be unique.</span>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
@@ -136,6 +182,7 @@
                     <option value="Cleaning Supplies">Cleaning Supplies</option>
                     <option value="Other">Other</option>
                   </select>
+                  <span class="input-helper">Groups items together in purchase history.</span>
                 </div>
                 <div class="form-group">
                   <label for="stockItemDefaultUnit">Default Unit</label>
@@ -147,27 +194,30 @@
                     <option value="piece">piece</option>
                     <option value="pack">pack</option>
                   </select>
+                  <span class="input-helper">The base unit used for billing and tracking stock levels.</span>
                 </div>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
                   <label for="stockItemLowStockThreshold">Low stock threshold</label>
                   <input id="stockItemLowStockThreshold" class="form-control" type="number" min="0" step="any" value="10" required>
+                  <span class="input-helper">Triggers a dashboard alert when remaining stock falls below this quantity.</span>
                 </div>
                 <div class="form-group toggle-row" style="margin-top: 1.5rem;">
                   <label class="toggle-control">
                     <input id="stockItemIsActive" type="checkbox" checked>
-                    <span>Active</span>
+                    <span>Active catalog item</span>
                   </label>
                 </div>
               </div>
               <div class="form-group">
                 <label for="stockItemNotes">Notes</label>
                 <textarea id="stockItemNotes" class="form-control text-area-control" rows="3" placeholder="Storage instructions, typical shelf life, or usage notes"></textarea>
+                <span class="input-helper">Internal notes about quality, storage temperature, or shelf life.</span>
               </div>
               <div class="form-actions">
                 <button class="btn btn-primary" type="submit">Save stock item</button>
-                <button class="btn btn-outline" id="stockItemResetBtn" type="button">New stock item</button>
+                <button class="btn btn-outline" id="stockItemResetBtn" type="button">Cancel / Clear</button>
               </div>
             </form>
 
@@ -176,34 +226,39 @@
               <div class="form-group">
                 <label for="vendorName">Vendor name</label>
                 <input id="vendorName" class="form-control" type="text" placeholder="Fresh Produce Supplier" required>
+                <span class="input-helper">The trading name of the company or merchant (e.g. Fresh Market Supplier).</span>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
                   <label for="vendorContactName">Contact name</label>
                   <input id="vendorContactName" class="form-control" type="text" placeholder="Primary contact">
+                  <span class="input-helper">Person to contact if invoice items have mismatched prices.</span>
                 </div>
                 <div class="form-group">
                   <label for="vendorPhone">Phone</label>
                   <input id="vendorPhone" class="form-control" type="text" placeholder="+91 98XXXXXXXX">
+                  <span class="input-helper">Used to contact the vendor or verify details.</span>
                 </div>
               </div>
               <div class="form-group">
                 <label for="vendorCategorySupplied">Category Supplied</label>
                 <input id="vendorCategorySupplied" class="form-control" type="text" placeholder="Vegetables, Dairy, etc.">
+                <span class="input-helper">Primary goods they supply (e.g. Vegetables, Dry Goods).</span>
               </div>
               <div class="form-group">
                 <label for="vendorNotes">Notes</label>
                 <textarea id="vendorNotes" class="form-control text-area-control" rows="4" placeholder="Preferred delivery window, payment terms, or quality notes"></textarea>
+                <span class="input-helper">Delivery window, credit period, or minimum order requirements.</span>
               </div>
               <div class="toggle-row">
                 <label class="toggle-control">
                   <input id="vendorIsActive" type="checkbox" checked>
-                  <span>Active</span>
+                  <span>Active vendor</span>
                 </label>
               </div>
               <div class="form-actions">
                 <button class="btn btn-primary" type="submit">Save vendor</button>
-                <button class="btn btn-outline" id="vendorResetBtn" type="button">New vendor</button>
+                <button class="btn btn-outline" id="vendorResetBtn" type="button">Cancel / Clear</button>
               </div>
             </form>
           </section>

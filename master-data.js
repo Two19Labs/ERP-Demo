@@ -67,6 +67,44 @@ function wireDashboardEvents() {
   document.getElementById("vendorForm")?.addEventListener("submit", saveVendor);
   document.getElementById("stockItemResetBtn")?.addEventListener("click", resetStockItemForm);
   document.getElementById("vendorResetBtn")?.addEventListener("click", resetVendorForm);
+
+  document.getElementById("closeOnboardingBtn")?.addEventListener("click", () => {
+    document.getElementById("onboardingGuide").classList.add("hidden");
+  });
+
+  document.getElementById("addRecordBtn")?.addEventListener("click", () => {
+    if (appState.profile?.role_code !== "owner") return;
+    if (appState.currentTab === "stock_items") {
+      resetStockItemForm();
+      showForm("stock_items");
+    } else {
+      resetVendorForm();
+      showForm("vendors");
+    }
+  });
+}
+
+function showForm(tab) {
+  document.getElementById("detailsPlaceholder")?.classList.add("hidden");
+  const forms = {
+    stock_items: document.getElementById("stockItemForm"),
+    vendors: document.getElementById("vendorForm")
+  };
+  Object.entries(forms).forEach(([key, form]) => {
+    if (form) {
+      if (key === tab) {
+        form.classList.remove("hidden");
+      } else {
+        form.classList.add("hidden");
+      }
+    }
+  });
+}
+
+function showPlaceholder() {
+  document.getElementById("detailsPlaceholder")?.classList.remove("hidden");
+  document.getElementById("stockItemForm")?.classList.add("hidden");
+  document.getElementById("vendorForm")?.classList.add("hidden");
 }
 
 async function setupDashboard(user) {
@@ -187,6 +225,8 @@ function switchTab(tabName) {
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.classList.toggle("tab-button-active", button.dataset.tab === tabName);
   });
+  resetStockItemForm();
+  resetVendorForm();
   renderCurrentTab();
 }
 
@@ -219,6 +259,19 @@ function renderFormPanel() {
   document.getElementById("formEyebrow").textContent = tabConfig.eyebrow;
   document.getElementById("formHint").textContent = tabConfig.hint;
 
+  const placeholderText = document.getElementById("placeholderText");
+  if (placeholderText) {
+    placeholderText.textContent = tab === "stock_items"
+      ? "Select a stock item from the list to view and edit details, or click the button above the list to create a new one."
+      : "Select a vendor from the list to view and edit details, or click the button above the list to create a new one.";
+  }
+
+  const addRecordBtn = document.getElementById("addRecordBtn");
+  if (addRecordBtn) {
+    addRecordBtn.textContent = tab === "stock_items" ? "+ New Stock Item" : "+ New Vendor";
+    addRecordBtn.style.display = isOwner ? "inline-flex" : "none";
+  }
+
   const forms = {
     stock_items: document.getElementById("stockItemForm"),
     vendors: document.getElementById("vendorForm")
@@ -226,8 +279,7 @@ function renderFormPanel() {
 
   Object.entries(forms).forEach(([key, form]) => {
     if (form) {
-      form.classList.toggle("hidden", key !== tab);
-      const shouldDisable = key !== tab || !tabConfig.editable;
+      const shouldDisable = !isOwner;
       form.querySelectorAll("input, select, textarea, button").forEach((element) => {
         element.disabled = shouldDisable;
       });
@@ -265,8 +317,10 @@ function bindEditButtons() {
       const { editType, editId } = button.dataset;
       if (editType === "stock_item") {
         populateStockItemForm(editId);
+        showForm("stock_items");
       } else if (editType === "vendor") {
         populateVendorForm(editId);
+        showForm("vendors");
       }
     });
   });
@@ -338,12 +392,14 @@ function resetStockItemForm() {
   document.getElementById("stockItemForm").reset();
   document.getElementById("stockItemId").value = "";
   document.getElementById("stockItemIsActive").checked = true;
+  showPlaceholder();
 }
 
 function resetVendorForm() {
   document.getElementById("vendorForm").reset();
   document.getElementById("vendorId").value = "";
   document.getElementById("vendorIsActive").checked = true;
+  showPlaceholder();
 }
 
 async function saveStockItem(event) {

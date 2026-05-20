@@ -17,12 +17,28 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="master-data.html">Stock Setup</a>
-      <a class="nav-item nav-item-active nav-link" href="dashboard.html">Stock Dashboard</a>
-      <button class="nav-item" type="button" disabled>Bill Capture</button>
-      <button class="nav-item" type="button" disabled>Purchase Register</button>
-      <button class="nav-item" type="button" disabled>Stock Ledger</button>
-      <button class="nav-item" type="button" disabled>Alerts</button>
+      <a class="nav-item nav-link" href="master-data.html">
+        <span>Stock Setup</span>
+      </a>
+      <a class="nav-item nav-item-active nav-link" href="dashboard.html">
+        <span>Stock Dashboard</span>
+      </a>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 5">
+        <span>Bill Capture</span>
+        <span class="nav-badge">Phase 5</span>
+      </button>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 3">
+        <span>Purchase Register</span>
+        <span class="nav-badge">Phase 3</span>
+      </button>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 4">
+        <span>Stock Ledger</span>
+        <span class="nav-badge">Phase 4</span>
+      </button>
+      <button class="nav-item" type="button" disabled title="Unlocks in Phase 7">
+        <span>Alerts</span>
+        <span class="nav-badge">Phase 7</span>
+      </button>
     </nav>
 
     <div class="sidebar-note">
@@ -34,7 +50,7 @@
   <div class="content-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Phase 0</p>
+        <p class="eyebrow">Phase 2</p>
         <h2>Stock Control Dashboard</h2>
       </div>
 
@@ -48,6 +64,27 @@
     </header>
 
     <main class="content-main">
+      <div id="onboardingGuide" class="onboarding-guide animate-fade">
+        <h4>
+          <span>Owner's Quick Start Guide</span>
+          <button id="closeOnboardingBtn" class="onboarding-guide-close" type="button" title="Dismiss Guide">&times;</button>
+        </h4>
+        <p>Welcome to your stock control system! Follow this path to unlock automated bill checks and inventory tracking:</p>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <h5><span class="onboarding-step-num">1</span>Catalog Setup</h5>
+            <p>Create your <strong>Stock Items</strong> and <strong>Approved Vendors</strong> on the <strong>Stock Setup</strong> page to build your reference list.</p>
+          </div>
+          <div class="onboarding-step">
+            <h5><span class="onboarding-step-num">2</span>Manual & Chat Capture</h5>
+            <p>Paste text bills or type line items (Phase 3 & 5) which are held as <strong>Pending Review</strong>.</p>
+          </div>
+          <div class="onboarding-step">
+            <h5><span class="onboarding-step-num">3</span>Approve & Track</h5>
+            <p>Review rates for price inflation. Once approved, the stock ledger is automatically updated (Phase 4).</p>
+          </div>
+        </div>
+      </div>
       <section class="hero-panel">
         <div>
           <p class="eyebrow">Owner workflow</p>

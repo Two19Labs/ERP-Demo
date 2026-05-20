@@ -131,6 +131,10 @@ function wireDashboardEvents() {
   document.getElementById("copyYesterdayBtn")?.addEventListener("click", copyYesterdayMenu);
   document.getElementById("saveMenuBtn")?.addEventListener("click", saveMenu);
   document.getElementById("clearMenuBtn")?.addEventListener("click", clearSelectedMenu);
+
+  document.getElementById("closeOnboardingBtn")?.addEventListener("click", () => {
+    document.getElementById("onboardingGuide").classList.add("hidden");
+  });
 }
 
 async function setupDashboard(user) {
