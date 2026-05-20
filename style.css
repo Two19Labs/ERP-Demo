@@ -1523,3 +1523,53 @@ body {
 .toast-info {
   background: var(--ink, #1f1d1a);
 }
+
+/* Phase 9 mobile polish */
+@media (max-width: 640px) {
+  /* Ensure tables can scroll horizontally instead of breaking the layout */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Tab strips that overflow should scroll horizontally */
+  .tab-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .tab-button {
+    flex-shrink: 0;
+  }
+
+  /* Toasts should hug the bottom of the screen on mobile */
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .toast {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Hero/onboarding cards: looser line-height, smaller eyebrows */
+  .onboarding-steps {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sticky form action buttons readable when keyboard is open */
+  .form-actions .btn {
+    min-height: 44px;
+  }
+
+  /* Tap targets in record cards */
+  .record-card {
+    min-height: 56px;
+  }
+}

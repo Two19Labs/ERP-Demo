@@ -247,8 +247,18 @@
               </div>
               <div class="form-group">
                 <label for="vendorCategorySupplied">Category Supplied</label>
-                <input id="vendorCategorySupplied" class="form-control" type="text" placeholder="Vegetables, Dairy, etc.">
-                <span class="input-helper">Primary goods they supply (e.g. Vegetables, Dry Goods).</span>
+                <input id="vendorCategorySupplied" class="form-control" type="text" list="categorySuggestions" placeholder="Vegetables, Dairy, etc.">
+                <datalist id="categorySuggestions">
+                  <option value="Vegetables"></option>
+                  <option value="Dairy"></option>
+                  <option value="Meat / Protein"></option>
+                  <option value="Dry Goods"></option>
+                  <option value="Spices"></option>
+                  <option value="Beverages"></option>
+                  <option value="Packaging"></option>
+                  <option value="Cleaning Supplies"></option>
+                </datalist>
+                <span class="input-helper">Primary goods they supply. Pick from the list or type your own.</span>
               </div>
               <div class="form-group">
                 <label for="vendorNotes">Notes</label>
