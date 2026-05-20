@@ -92,6 +92,10 @@ function wireDashboardEvents() {
       document.activeElement.blur();
     }
   });
+
+  // Wire detail tabs
+  document.getElementById("detailTabConfig")?.addEventListener("click", () => switchDetailTab("config"));
+  document.getElementById("detailTabHistory")?.addEventListener("click", () => switchDetailTab("history"));
 }
 
 function showForm(tab) {
@@ -115,6 +119,8 @@ function showPlaceholder() {
   document.getElementById("detailsPlaceholder")?.classList.remove("hidden");
   document.getElementById("stockItemForm")?.classList.add("hidden");
   document.getElementById("vendorForm")?.classList.add("hidden");
+  document.getElementById("detailTabs")?.classList.add("hidden");
+  document.getElementById("historyContainer")?.classList.add("hidden");
 }
 
 async function setupDashboard(user) {
@@ -324,6 +330,16 @@ function renderListPanel() {
 
 window.selectRecord = function (type, id) {
   appState.selectedRecordId = id;
+  
+  const detailTabs = document.getElementById("detailTabs");
+  if (detailTabs) {
+    detailTabs.classList.remove("hidden");
+    const historyBtn = document.getElementById("detailTabHistory");
+    if (historyBtn) {
+      historyBtn.textContent = type === "stock_item" ? "Price History" : "Purchase History";
+    }
+  }
+
   if (type === "stock_item") {
     populateStockItemForm(id);
     showForm("stock_items");
@@ -331,6 +347,8 @@ window.selectRecord = function (type, id) {
     populateVendorForm(id);
     showForm("vendors");
   }
+  
+  switchDetailTab("config");
   renderListPanel();
 };
 
@@ -415,6 +433,8 @@ function resetStockItemForm() {
   document.getElementById("stockItemId").value = "";
   document.getElementById("stockItemIsActive").checked = true;
   appState.selectedRecordId = null;
+  document.getElementById("detailTabs")?.classList.add("hidden");
+  document.getElementById("historyContainer")?.classList.add("hidden");
   showPlaceholder();
   renderListPanel();
 }
@@ -424,6 +444,472 @@ function resetVendorForm() {
   document.getElementById("vendorId").value = "";
   document.getElementById("vendorIsActive").checked = true;
   appState.selectedRecordId = null;
+  document.getElementById("detailTabs")?.classList.add("hidden");
+  document.getElementById("historyContainer")?.classList.add("hidden");
+  showPlaceholder();
+  renderListPanel();
+}
+
+function switchDetailTab(tab) {
+  appState.activeDetailTab = tab;
+  
+  const configBtn = document.getElementById("detailTabConfig");
+  const historyBtn = document.getElementById("detailTabHistory");
+  
+  configBtn?.classList.toggle("tab-button-active", tab === "config");
+  historyBtn?.classList.toggle("tab-button-active", tab === "history");
+  
+  const historyContainer = document.getElementById("historyContainer");
+  const stockItemForm = document.getElementById("stockItemForm");
+  const vendorForm = document.getElementById("vendorForm");
+  
+  if (tab === "config") {
+    historyContainer?.classList.add("hidden");
+    if (appState.currentTab === "stock_items") {
+      stockItemForm?.classList.remove("hidden");
+      vendorForm?.classList.add("hidden");
+    } else {
+      vendorForm?.classList.remove("hidden");
+      stockItemForm?.classList.add("hidden");
+    }
+  } else {
+    stockItemForm?.classList.add("hidden");
+    vendorForm?.classList.add("hidden");
+    historyContainer?.classList.remove("hidden");
+    
+    if (appState.currentTab === "stock_items") {
+      renderStockItemHistory(appState.selectedRecordId);
+    } else {
+      renderVendorHistory(appState.selectedRecordId);
+    }
+  }
+}
+
+async function renderStockItemHistory(stockItemId) {
+  const container = document.getElementById("historyContainer");
+  container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--clay);">Loading price history...</div>';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("purchase_bill_items")
+      .select(`
+        id,
+        quantity,
+        unit,
+        unit_price,
+        line_total,
+        purchase_bills!inner (
+          bill_date,
+          bill_number,
+          status,
+          vendors (
+            id,
+            name
+          )
+        )
+      `)
+      .eq("stock_item_id", stockItemId)
+      .eq("purchase_bills.status", "approved");
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="placeholder-view" style="padding: 30px 15px;">
+          <div class="placeholder-icon" style="font-size: 2.5rem; margin-bottom: 10px;">📈</div>
+          <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: var(--ink);">No approved purchases yet</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 280px; line-height: 1.4;">Approved purchase bills containing this stock item will populate price history and trends.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const sortedTimeline = [...data].sort((a, b) => new Date(a.purchase_bills.bill_date) - new Date(b.purchase_bills.bill_date));
+    const recentTimeline = [...data].sort((a, b) => new Date(b.purchase_bills.bill_date) - new Date(a.purchase_bills.bill_date));
+
+    const unitPrices = data.map(d => d.unit_price);
+    const lastPurchase = recentTimeline[0];
+    const lastPrice = lastPurchase.unit_price;
+    const lastDate = lastPurchase.purchase_bills.bill_date;
+    const lastVendor = lastPurchase.purchase_bills.vendors?.name || "Unknown";
+
+    const totalQty = data.reduce((sum, d) => sum + d.quantity, 0);
+    const totalSpent = data.reduce((sum, d) => sum + d.line_total, 0);
+    const avgPrice = totalQty > 0 ? (totalSpent / totalQty) : 0;
+
+    const minPrice = Math.min(...unitPrices);
+    const maxPrice = Math.max(...unitPrices);
+
+    const vendorMap = {};
+    data.forEach(item => {
+      const vendorName = item.purchase_bills.vendors?.name || "Unknown";
+      if (!vendorMap[vendorName]) {
+        vendorMap[vendorName] = {
+          name: vendorName,
+          totalQty: 0,
+          totalSpent: 0,
+          minPrice: item.unit_price,
+          maxPrice: item.unit_price,
+          lastPrice: item.unit_price,
+          lastDate: item.purchase_bills.bill_date
+        };
+      }
+      const vendor = vendorMap[vendorName];
+      vendor.totalQty += item.quantity;
+      vendor.totalSpent += item.line_total;
+      vendor.minPrice = Math.min(vendor.minPrice, item.unit_price);
+      vendor.maxPrice = Math.max(vendor.maxPrice, item.unit_price);
+      
+      if (new Date(item.purchase_bills.bill_date) >= new Date(vendor.lastDate)) {
+        vendor.lastPrice = item.unit_price;
+        vendor.lastDate = item.purchase_bills.bill_date;
+      }
+    });
+
+    const vendorComparison = Object.values(vendorMap);
+
+    let html = `
+      <div class="status-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px;">
+        <article class="status-card" style="padding: 10px;">
+          <p class="card-label" style="font-size: 0.72rem; margin-bottom: 2px;">Last Price</p>
+          <strong style="font-size: 1.15rem; color: var(--ink);">₹${lastPrice.toFixed(2)}</strong>
+          <span style="font-size: 0.68rem; color: var(--clay); display: block; margin-top: 4px; line-height: 1.2;">
+            ${lastVendor}<br/>on ${lastDate}
+          </span>
+        </article>
+        <article class="status-card" style="padding: 10px;">
+          <p class="card-label" style="font-size: 0.72rem; margin-bottom: 2px;">Weighted Avg</p>
+          <strong style="font-size: 1.15rem; color: var(--leaf);">₹${avgPrice.toFixed(2)}</strong>
+          <span style="font-size: 0.68rem; color: var(--clay); display: block; margin-top: 4px; line-height: 1.2;">
+            Across ${totalQty.toFixed(1)} ${lastPurchase.unit}s purchased
+          </span>
+        </article>
+        <article class="status-card" style="padding: 10px;">
+          <p class="card-label" style="font-size: 0.72rem; margin-bottom: 2px;">Price Range</p>
+          <strong style="font-size: 1.1rem; color: var(--saffron);">₹${minPrice.toFixed(2)} - ₹${maxPrice.toFixed(2)}</strong>
+          <span style="font-size: 0.68rem; color: var(--clay); display: block; margin-top: 4px; line-height: 1.2;">
+            Min/Max paid historically
+          </span>
+        </article>
+      </div>
+    `;
+
+    if (sortedTimeline.length > 1) {
+      html += `
+        <div class="panel panel-soft" style="margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.4);">
+          <h4 style="margin: 0 0 10px 0; font-size: 0.82rem; font-weight: 700; color: var(--ink);">Price Trend Over Time (₹ per ${lastPurchase.unit})</h4>
+          <div style="width: 100%; height: 110px; position: relative;">
+            ${generatePriceTrendSVG(sortedTimeline)}
+          </div>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="panel panel-soft" style="margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.4);">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.82rem; font-weight: 700; color: var(--ink);">Vendor Price Comparison</h4>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line); color: var(--clay); font-weight: 600;">
+                <th style="padding: 6px 4px;">Vendor</th>
+                <th style="padding: 6px 4px; text-align: right;">Last Price</th>
+                <th style="padding: 6px 4px; text-align: right;">Avg Price</th>
+                <th style="padding: 6px 4px; text-align: right;">Min Price</th>
+                <th style="padding: 6px 4px; text-align: right;">Max Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${vendorComparison.map(vc => `
+                <tr style="border-bottom: 1px solid var(--line);">
+                  <td style="padding: 6px 4px; font-weight: 500; color: var(--ink);">${vc.name}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--ink); font-weight: 600;">₹${vc.lastPrice.toFixed(2)}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--leaf);">₹${(vc.totalSpent / vc.totalQty).toFixed(2)}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--clay);">₹${vc.minPrice.toFixed(2)}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--clay);">₹${vc.maxPrice.toFixed(2)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    html += `
+      <div class="panel panel-soft" style="padding: 12px; background: rgba(255, 255, 255, 0.4);">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.82rem; font-weight: 700; color: var(--ink);">Purchase Timeline</h4>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line); color: var(--clay); font-weight: 600;">
+                <th style="padding: 6px 4px;">Date</th>
+                <th style="padding: 6px 4px;">Vendor</th>
+                <th style="padding: 6px 4px; text-align: right;">Qty</th>
+                <th style="padding: 6px 4px; text-align: right;">Price</th>
+                <th style="padding: 6px 4px; text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${recentTimeline.slice(0, 10).map(t => `
+                <tr style="border-bottom: 1px solid var(--line);">
+                  <td style="padding: 6px 4px; color: var(--ink); font-weight: 500;">${t.purchase_bills.bill_date}</td>
+                  <td style="padding: 6px 4px; color: var(--clay);">${t.purchase_bills.vendors?.name || "Unknown"}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--ink);">${t.quantity} ${t.unit}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--ink); font-weight: 500;">₹${t.unit_price.toFixed(2)}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--ink);">₹${t.line_total.toFixed(2)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+  } catch (error) {
+    console.error("Error loading price history:", error);
+    container.innerHTML = `<div style="padding: 20px; color: var(--saffron); text-align: center; font-size: 0.85rem;">Error loading price history: ${error.message}</div>`;
+  }
+}
+
+function generatePriceTrendSVG(timeline) {
+  const prices = timeline.map(t => t.unit_price);
+  const minP = Math.min(...prices);
+  const maxP = Math.max(...prices);
+  const priceRange = maxP - minP || 1;
+
+  const dates = timeline.map(t => new Date(t.purchase_bills.bill_date).getTime());
+  const minD = Math.min(...dates);
+  const maxD = Math.max(...dates);
+  const dateRange = maxD - minD || 1;
+
+  const width = 400;
+  const height = 90;
+  const paddingX = 35;
+  const paddingY = 10;
+
+  const points = timeline.map(t => {
+    const dTime = new Date(t.purchase_bills.bill_date).getTime();
+    const x = paddingX + ((dTime - minD) / dateRange) * (width - 2 * paddingX);
+    const y = height - paddingY - ((t.unit_price - minP) / priceRange) * (height - 2 * paddingY);
+    return { x, y, price: t.unit_price, date: t.purchase_bills.bill_date };
+  });
+
+  const pathD = points.map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+
+  const yMin = height - paddingY;
+  const yMax = paddingY;
+  const yMid = paddingY + (height - 2 * paddingY) / 2;
+
+  const midPrice = minP + priceRange / 2;
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 100%; overflow: visible; font-family: inherit;">
+      <line x1="${paddingX}" y1="${yMin}" x2="${width - paddingX}" y2="${yMin}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>
+      <line x1="${paddingX}" y1="${yMid}" x2="${width - paddingX}" y2="${yMid}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>
+      <line x1="${paddingX}" y1="${yMax}" x2="${width - paddingX}" y2="${yMax}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>
+      
+      <text x="${paddingX - 5}" y="${yMin + 3}" fill="var(--clay)" font-size="8" text-anchor="end">₹${minP.toFixed(1)}</text>
+      <text x="${paddingX - 5}" y="${yMid + 3}" fill="var(--clay)" font-size="8" text-anchor="end">₹${midPrice.toFixed(1)}</text>
+      <text x="${paddingX - 5}" y="${yMax + 3}" fill="var(--clay)" font-size="8" text-anchor="end">₹${maxP.toFixed(1)}</text>
+
+      <text x="${paddingX}" y="${height}" fill="var(--clay)" font-size="8" text-anchor="start">${timeline[0].purchase_bills.bill_date}</text>
+      <text x="${width - paddingX}" y="${height}" fill="var(--clay)" font-size="8" text-anchor="end">${timeline[timeline.length - 1].purchase_bills.bill_date}</text>
+
+      <path d="${pathD}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      
+      ${points.map(p => `
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--teal)" stroke="white" stroke-width="1.2">
+          <title>₹${p.price.toFixed(2)} on ${p.date}</title>
+        </circle>
+      `).join("")}
+    </svg>
+  `;
+}
+
+async function renderVendorHistory(vendorId) {
+  const container = document.getElementById("historyContainer");
+  container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--clay);">Loading purchase history...</div>';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("purchase_bills")
+      .select(`
+        id,
+        bill_number,
+        bill_date,
+        total,
+        purchase_bill_items (
+          id,
+          quantity,
+          unit,
+          unit_price,
+          line_total,
+          stock_items (
+            name
+          )
+        )
+      `)
+      .eq("vendor_id", vendorId)
+      .eq("status", "approved")
+      .order("bill_date", { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="placeholder-view" style="padding: 30px 15px;">
+          <div class="placeholder-icon" style="font-size: 2.5rem; margin-bottom: 10px;">🧾</div>
+          <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: var(--ink);">No approved bills yet</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 280px; line-height: 1.4;">Approved purchase bills from this supplier will show up here as purchase history.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const totalSpent = data.reduce((sum, bill) => sum + bill.total, 0);
+    const billsCount = data.length;
+
+    const itemsMap = {};
+    data.forEach(bill => {
+      bill.purchase_bill_items.forEach(item => {
+        const name = item.stock_items?.name || "Unknown";
+        if (!itemsMap[name]) {
+          itemsMap[name] = {
+            name: name,
+            totalQty: 0,
+            unit: item.unit,
+            totalSpent: 0,
+            lastPrice: item.unit_price,
+            lastDate: bill.bill_date
+          };
+        }
+        const mapped = itemsMap[name];
+        mapped.totalQty += item.quantity;
+        mapped.totalSpent += item.line_total;
+        
+        if (new Date(bill.bill_date) >= new Date(mapped.lastDate)) {
+          mapped.lastPrice = item.unit_price;
+          mapped.lastDate = bill.bill_date;
+        }
+      });
+    });
+
+    const itemsSupplied = Object.values(itemsMap);
+
+    let html = `
+      <div class="status-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px;">
+        <article class="status-card" style="padding: 10px;">
+          <p class="card-label" style="font-size: 0.72rem; margin-bottom: 2px;">Total Purchases</p>
+          <strong style="font-size: 1.15rem; color: var(--ink);">₹${totalSpent.toFixed(2)}</strong>
+          <span style="font-size: 0.68rem; color: var(--clay); display: block; margin-top: 4px; line-height: 1.2;">
+            Cumulative spend with vendor
+          </span>
+        </article>
+        <article class="status-card" style="padding: 10px;">
+          <p class="card-label" style="font-size: 0.72rem; margin-bottom: 2px;">Approved Bills</p>
+          <strong style="font-size: 1.15rem; color: var(--leaf);">${billsCount}</strong>
+          <span style="font-size: 0.68rem; color: var(--clay); display: block; margin-top: 4px; line-height: 1.2;">
+            Validated and logged in ledger
+          </span>
+        </article>
+        <article class="status-card" style="padding: 10px;">
+          <p class="card-label" style="font-size: 0.72rem; margin-bottom: 2px;">Unique Items</p>
+          <strong style="font-size: 1.15rem; color: var(--saffron);">${itemsSupplied.length}</strong>
+          <span style="font-size: 0.68rem; color: var(--clay); display: block; margin-top: 4px; line-height: 1.2;">
+            Different catalog items supplied
+          </span>
+        </article>
+      </div>
+    `;
+
+    html += `
+      <div class="panel panel-soft" style="margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.4);">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.82rem; font-weight: 700; color: var(--ink);">Approved Bills History</h4>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line); color: var(--clay); font-weight: 600;">
+                <th style="padding: 6px 4px;">Date</th>
+                <th style="padding: 6px 4px;">Bill Number</th>
+                <th style="padding: 6px 4px;">Items Summary</th>
+                <th style="padding: 6px 4px; text-align: right;">Total Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(bill => {
+                const summary = bill.purchase_bill_items.map(item => item.stock_items?.name || "Unknown").join(", ");
+                const truncatedSummary = summary.length > 30 ? summary.substring(0, 27) + "..." : summary;
+                return `
+                  <tr style="border-bottom: 1px solid var(--line);">
+                    <td style="padding: 6px 4px; font-weight: 500; color: var(--ink);">${bill.bill_date}</td>
+                    <td style="padding: 6px 4px; color: var(--clay);">${bill.bill_number || "N/A"}</td>
+                    <td style="padding: 6px 4px; color: var(--clay);" title="${summary}">${truncatedSummary}</td>
+                    <td style="padding: 6px 4px; text-align: right; color: var(--ink); font-weight: 600;">₹${bill.total.toFixed(2)}</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    html += `
+      <div class="panel panel-soft" style="padding: 12px; background: rgba(255, 255, 255, 0.4);">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.82rem; font-weight: 700; color: var(--ink);">Catalog Items Supplied</h4>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line); color: var(--clay); font-weight: 600;">
+                <th style="padding: 6px 4px;">Item Name</th>
+                <th style="padding: 6px 4px; text-align: right;">Total Quantity</th>
+                <th style="padding: 6px 4px; text-align: right;">Last Rate Paid</th>
+                <th style="padding: 6px 4px; text-align: right;">Avg Rate Paid</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsSupplied.map(item => `
+                <tr style="border-bottom: 1px solid var(--line);">
+                  <td style="padding: 6px 4px; font-weight: 500; color: var(--ink);">${item.name}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--clay);">${item.totalQty.toFixed(1)} ${item.unit}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--ink); font-weight: 600;">₹${item.lastPrice.toFixed(2)}</td>
+                  <td style="padding: 6px 4px; text-align: right; color: var(--leaf);">₹${(item.totalSpent / item.totalQty).toFixed(2)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+  } catch (error) {
+    console.error("Error loading vendor purchase history:", error);
+    container.innerHTML = `<div style="padding: 20px; color: var(--saffron); text-align: center; font-size: 0.85rem;">Error loading purchase history: ${error.message}</div>`;
+  }
+}
+
+function resetStockItemForm() {
+  document.getElementById("stockItemForm").reset();
+  document.getElementById("stockItemId").value = "";
+  document.getElementById("stockItemIsActive").checked = true;
+  appState.selectedRecordId = null;
+  document.getElementById("detailTabs")?.classList.add("hidden");
+  document.getElementById("historyContainer")?.classList.add("hidden");
+  showPlaceholder();
+  renderListPanel();
+}
+
+function resetVendorForm() {
+  document.getElementById("vendorForm").reset();
+  document.getElementById("vendorId").value = "";
+  document.getElementById("vendorIsActive").checked = true;
+  appState.selectedRecordId = null;
+  document.getElementById("detailTabs")?.classList.add("hidden");
+  document.getElementById("historyContainer")?.classList.add("hidden");
   showPlaceholder();
   renderListPanel();
 }

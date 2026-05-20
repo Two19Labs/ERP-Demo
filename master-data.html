@@ -152,11 +152,18 @@
 
             <div id="formHint" class="form-hint"></div>
 
+            <div id="detailTabs" class="tab-strip hidden" style="margin-top: 10px; margin-bottom: 15px;">
+              <button class="tab-button tab-button-active" id="detailTabConfig" type="button">Configuration</button>
+              <button class="tab-button" id="detailTabHistory" type="button">History</button>
+            </div>
+
             <div id="detailsPlaceholder" class="placeholder-view">
               <div class="placeholder-icon">&#128221;</div>
               <h4>No record selected</h4>
               <p id="placeholderText">Select a stock item from the list to view and edit details, or click the button above the list to create a new one.</p>
             </div>
+
+            <div id="historyContainer" class="hidden"></div>
 
             <form id="stockItemForm" class="data-form hidden">
               <input type="hidden" id="stockItemId">

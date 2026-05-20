@@ -1045,5 +1045,41 @@ body {
   border: 1px solid rgba(93, 104, 108, 0.2);
 }
 
+/* Price & Purchase History detail section styles */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.status-card {
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 10px rgba(40, 56, 60, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-card:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 14px rgba(40, 56, 60, 0.05);
+}
+
+.status-card .card-label {
+  font-size: 0.72rem;
+  color: var(--clay);
+  margin-bottom: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-card strong {
+  display: block;
+}
+
+
 
 
