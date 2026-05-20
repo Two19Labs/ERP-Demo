@@ -85,6 +85,13 @@ function wireDashboardEvents() {
       showForm("vendors");
     }
   });
+
+  // Prevent accidental changes to number inputs via mouse wheel scrolling
+  window.addEventListener("wheel", () => {
+    if (document.activeElement && document.activeElement.type === "number") {
+      document.activeElement.blur();
+    }
+  });
 }
 
 function showForm(tab) {

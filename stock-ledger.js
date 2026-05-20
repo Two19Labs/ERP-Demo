@@ -77,6 +77,13 @@ function wireLedgerEvents() {
 
   // Manual movement submission listener
   document.getElementById("logMovementBtn")?.addEventListener("click", saveManualMovement);
+
+  // Prevent accidental changes to number inputs via mouse wheel scrolling
+  window.addEventListener("wheel", () => {
+    if (document.activeElement && document.activeElement.type === "number") {
+      document.activeElement.blur();
+    }
+  });
 }
 
 async function setupLedger(user) {
