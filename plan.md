@@ -85,14 +85,14 @@ Create the minimum backend structure needed for stock tracking.
 
 ## Build
 
-- [ ] Create `users`.
-- [ ] Create `roles` or simple user type: owner/staff.
-- [ ] Create `stock_items`.
-- [ ] Create `vendors`.
-- [ ] Create `purchase_bills`.
-- [ ] Create `purchase_bill_items`.
-- [ ] Create `stock_movements`.
-- [ ] Create basic RLS policies.
+- [x] Create `users`.
+- [x] Create `roles` or simple user type: owner/staff.
+- [x] Create `stock_items`.
+- [x] Create `vendors`.
+- [x] Create `purchase_bills`.
+- [x] Create `purchase_bill_items`.
+- [x] Create `stock_movements`.
+- [x] Create basic RLS policies.
 
 ## Suggested Tables
 
