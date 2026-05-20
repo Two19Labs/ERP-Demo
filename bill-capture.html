@@ -74,10 +74,25 @@
       <div class="workspace-grid" style="margin-top: 20px;">
         <!-- Left Column: Paste Input / File Upload Workspace -->
         <section class="panel panel-soft" style="display: flex; flex-direction: column;">
-          <div class="panel-header">
+          <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
               <p class="eyebrow">Data Entry</p>
               <h3>Digitize Supplier Invoice</h3>
+            </div>
+            <button id="toggleAiSettingsBtn" class="btn btn-outline btn-small" type="button" style="font-size: 0.75rem; padding: 4px 8px;">⚙️ AI Settings</button>
+          </div>
+
+          <!-- AI Configuration Panel (Collapsible) -->
+          <div id="aiSettingsPanel" class="hidden" style="background: rgba(255, 255, 255, 0.4); border: 1px solid var(--line); border-radius: 6px; padding: 12px; margin-bottom: 15px; font-size: 0.85rem;">
+            <p style="font-weight: 600; margin-bottom: 4px; color: var(--ink);">Intelligent AI Parsing (Hugging Face)</p>
+            <p style="font-size: 0.75rem; color: var(--clay); margin-bottom: 10px;">Paste your Hugging Face API key to enable advanced semantic parsing. Key is saved locally in your browser's localStorage.</p>
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label for="hfApiKeyInput" style="font-size: 0.75rem; margin-bottom: 4px; display: block;">Hugging Face API Key / Token</label>
+              <input id="hfApiKeyInput" class="form-control" type="password" placeholder="hf_..." style="font-size: 0.8rem; padding: 6px 10px;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+              <a href="https://huggingface.co/settings/tokens" target="_blank" style="font-size: 0.72rem; color: var(--saffron); text-decoration: underline; font-weight: 600;">Get a free API Key</a>
+              <button id="saveAiSettingsBtn" class="btn btn-primary btn-small" type="button" style="font-size: 0.75rem; padding: 4px 10px;">Save Key</button>
             </div>
           </div>
           

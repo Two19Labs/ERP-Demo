@@ -81,6 +81,40 @@ Total 3200`;
   document.getElementById("clearCapturedBillBtn")?.addEventListener("click", clearDraftForm);
   document.getElementById("saveCapturedBillBtn")?.addEventListener("click", saveCapturedBill);
 
+  // AI Settings Event Listeners
+  const toggleAiSettingsBtn = document.getElementById("toggleAiSettingsBtn");
+  const aiSettingsPanel = document.getElementById("aiSettingsPanel");
+  const saveAiSettingsBtn = document.getElementById("saveAiSettingsBtn");
+  const hfApiKeyInput = document.getElementById("hfApiKeyInput");
+
+  // Load existing key from localStorage
+  if (hfApiKeyInput) {
+    hfApiKeyInput.value = localStorage.getItem("hf_api_key") || "";
+  }
+
+  toggleAiSettingsBtn?.addEventListener("click", () => {
+    aiSettingsPanel?.classList.toggle("hidden");
+  });
+
+  saveAiSettingsBtn?.addEventListener("click", () => {
+    const key = hfApiKeyInput?.value.trim() || "";
+    localStorage.setItem("hf_api_key", key);
+    if (key) {
+      if (window.showToast) {
+        window.showToast("API Key saved locally!", "success");
+      } else {
+        alert("API Key saved locally!");
+      }
+    } else {
+      if (window.showToast) {
+        window.showToast("API Key removed. Using local parser fallback.", "info");
+      } else {
+        alert("API Key removed.");
+      }
+    }
+    aiSettingsPanel?.classList.add("hidden");
+  });
+
   // Prevent accidental changes to number inputs via mouse wheel scrolling
   window.addEventListener("wheel", () => {
     if (document.activeElement && document.activeElement.type === "number") {
@@ -617,7 +651,96 @@ function parseSingleSegment(segment, stockItems) {
   };
 }
 
-function handleParseText() {
+async function parseTextWithLLM(text, vendors, stockItems, apiKey) {
+  const vendorsList = vendors.map(v => `ID: "${v.id}", Name: "${v.name}"`).join("\n");
+  const stockItemsList = stockItems.map(si => `ID: "${si.id}", Name: "${si.name}"`).join("\n");
+
+  const systemPrompt = `You are a structured invoice data extractor. Convert the raw invoice/bill text into a JSON object matching this schema exactly:
+{
+  "vendorId": "string (matching vendor ID from the list, or empty string)",
+  "billNumber": "string (invoice/bill number, or empty)",
+  "billDate": "string (YYYY-MM-DD format, defaults to today's date)",
+  "parsedTotal": "number or null",
+  "items": [
+    {
+      "rawName": "string (raw product name)",
+      "quantity": "number (default 1)",
+      "unit": "string (standardized 'kg', 'litre', or 'pieces')",
+      "unitPrice": "number (unit rate)",
+      "lineTotal": "number (line total)"
+    }
+  ]
+}
+
+Available Vendors:
+${vendorsList}
+
+Available Stock Items:
+${stockItemsList}
+
+Rules:
+1. Output ONLY the JSON block. Do not include markdown code block syntax (like \`\`\`json) or any explanations.
+2. Select the vendor ID by mapping the mention in the text to the nearest available vendor.
+3. Keep units standardized ('kg', 'litre', or 'pieces').`;
+
+  const response = await fetch("https://api-inference.huggingface.co/models/Qwen/Qwen2.5-7B-Instruct", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      inputs: `<|im_start|>system\n${systemPrompt}<|im_end|>\n<|im_start|>user\nExtract details from:\n${text}<|im_end|>\n<|im_start|>assistant\n`,
+      parameters: {
+        max_new_tokens: 1024,
+        temperature: 0.1,
+        return_full_text: false
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`HF API Error: ${response.status} - ${errText}`);
+  }
+
+  const resData = await response.json();
+  let generatedText = "";
+  if (Array.isArray(resData)) {
+    generatedText = resData[0].generated_text;
+  } else {
+    generatedText = resData.generated_text;
+  }
+
+  generatedText = generatedText.trim();
+  // Strip code block wrappers if any
+  if (generatedText.startsWith("```json")) {
+    generatedText = generatedText.substring(7);
+  } else if (generatedText.startsWith("```")) {
+    generatedText = generatedText.substring(3);
+  }
+  if (generatedText.endsWith("```")) {
+    generatedText = generatedText.substring(0, generatedText.length - 3);
+  }
+  generatedText = generatedText.trim();
+
+  const parsedResult = JSON.parse(generatedText);
+  
+  if (Array.isArray(parsedResult.items)) {
+    parsedResult.items.forEach(item => {
+      item.matchedItemId = fuzzyMatchStockItem(item.rawName, stockItems) || "";
+      item.quantity = parseFloat(item.quantity) || 1;
+      item.unitPrice = parseFloat(item.unitPrice) || 0;
+      item.lineTotal = parseFloat(item.lineTotal) || (item.quantity * item.unitPrice);
+    });
+  } else {
+    parsedResult.items = [];
+  }
+
+  return parsedResult;
+}
+
+async function handleParseText() {
   const text = document.getElementById("rawBillText").value.trim();
   const feedback = document.getElementById("saveFeedback");
   if (feedback) feedback.classList.add("hidden");
@@ -627,9 +750,35 @@ function handleParseText() {
     return;
   }
 
-  const parsed = parseWhatsAppText(text, appState.records.vendors, appState.records.stock_items);
-  
-  if (parsed.items.length === 0) {
+  const parseBtn = document.getElementById("parseBillBtn");
+  const originalText = parseBtn.textContent;
+  parseBtn.disabled = true;
+  parseBtn.textContent = "Parsing (AI)...";
+
+  const apiKey = localStorage.getItem("hf_api_key");
+
+  let parsed = null;
+  if (apiKey) {
+    try {
+      parsed = await parseTextWithLLM(text, appState.records.vendors, appState.records.stock_items, apiKey);
+      if (window.showToast) {
+        window.showToast("Successfully parsed using Hugging Face LLM!", "success");
+      }
+    } catch (err) {
+      console.warn("LLM parsing failed. Falling back to local heuristic parser.", err);
+      if (window.showToast) {
+        window.showToast("AI parser failed. Falling back to local heuristic parser.", "error");
+      }
+      parsed = parseWhatsAppText(text, appState.records.vendors, appState.records.stock_items);
+    }
+  } else {
+    parsed = parseWhatsAppText(text, appState.records.vendors, appState.records.stock_items);
+  }
+
+  parseBtn.disabled = false;
+  parseBtn.textContent = originalText;
+
+  if (!parsed || !parsed.items || parsed.items.length === 0) {
     alert("Could not extract any line items. Please format lines like: Tomato 10 kg x 42 = 420");
     return;
   }
