@@ -784,7 +784,7 @@ async function handleParseText() {
     } catch (err) {
       console.warn("LLM parsing failed. Falling back to local heuristic parser.", err);
       if (window.showToast) {
-        window.showToast("AI parser failed. Falling back to local heuristic parser.", "error");
+        window.showToast(`AI parser failed: ${err.message || err}. Falling back to local parser.`, "error");
       }
       parsed = parseWhatsAppText(text, appState.records.vendors, appState.records.stock_items);
     }
