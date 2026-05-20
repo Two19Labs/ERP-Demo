@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restaurant Stock Control</title>
+  <title>Restaurant Stock Control - Stock Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,14 +27,12 @@
         <span>Bill Capture</span>
         <span class="nav-badge">Phase 5</span>
       </button>
-      <button class="nav-item" type="button" disabled title="Unlocks in Phase 3">
+      <a class="nav-item nav-link" href="purchase-register.html">
         <span>Purchase Register</span>
-        <span class="nav-badge">Phase 3</span>
-      </button>
-      <button class="nav-item" type="button" disabled title="Unlocks in Phase 4">
+      </a>
+      <a class="nav-item nav-link" href="stock-ledger.html">
         <span>Stock Ledger</span>
-        <span class="nav-badge">Phase 4</span>
-      </button>
+      </a>
       <button class="nav-item" type="button" disabled title="Unlocks in Phase 7">
         <span>Alerts</span>
         <span class="nav-badge">Phase 7</span>
@@ -43,14 +41,14 @@
 
     <div class="sidebar-note">
       <p class="note-label">Current goal</p>
-      <p id="sidebarScope">Capture supplier bills, approve real purchases, and keep stock movement visible.</p>
+      <p id="sidebarScope">Monitor overall stock levels, track recent entries, and identify low inventory items.</p>
     </div>
   </aside>
 
   <div class="content-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Phase 2</p>
+        <p class="eyebrow">Phase 4</p>
         <h2>Stock Control Dashboard</h2>
       </div>
 
@@ -66,261 +64,148 @@
     <main class="content-main">
       <div id="onboardingGuide" class="onboarding-guide animate-fade">
         <h4>
-          <span>Owner's Quick Start Guide</span>
+          <span>Owner's Dashboard Guide</span>
           <button id="closeOnboardingBtn" class="onboarding-guide-close" type="button" title="Dismiss Guide">&times;</button>
         </h4>
-        <p>Welcome to your stock control system! Follow this path to unlock automated bill checks and inventory tracking:</p>
+        <p>This is your inventory control center. The dashboard aggregates data from approved purchase bills and manual adjustments:</p>
         <div class="onboarding-steps">
           <div class="onboarding-step">
-            <h5><span class="onboarding-step-num">1</span>Catalog Setup</h5>
-            <p>Create your <strong>Stock Items</strong> and <strong>Approved Vendors</strong> on the <strong>Stock Setup</strong> page to build your reference list.</p>
+            <h5><span class="onboarding-step-num">1</span>Total Valuation</h5>
+            <p>Calculates the monetary value of your current stock based on the last recorded purchase rate of each item.</p>
           </div>
           <div class="onboarding-step">
-            <h5><span class="onboarding-step-num">2</span>Manual & Chat Capture</h5>
-            <p>Paste text bills or type line items (Phase 3 & 5) which are held as <strong>Pending Review</strong>.</p>
+            <h5><span class="onboarding-step-num">2</span>Low Stock Alerts</h5>
+            <p>Highlights items whose quantities have fallen below your predefined warning thresholds.</p>
           </div>
           <div class="onboarding-step">
-            <h5><span class="onboarding-step-num">3</span>Approve & Track</h5>
-            <p>Review rates for price inflation. Once approved, the stock ledger is automatically updated (Phase 4).</p>
+            <h5><span class="onboarding-step-num">3</span>Ledger Integration</h5>
+            <p>Every purchase approval, usage log, or wastage entry modifies this view in real time.</p>
           </div>
         </div>
       </div>
+
       <section class="hero-panel">
         <div>
-          <p class="eyebrow">Owner workflow</p>
-          <h3 id="welcomeTitle">Loading stock tracker</h3>
-          <p id="welcomeText" class="supporting-text">We are checking your access and preparing purchase and stock visibility.</p>
-        </div>
-
-        <div class="hero-controls hero-controls-stack">
-          <label class="selector-wrap" for="menuDate">
-            <span>Purchase date</span>
-            <input id="menuDate" class="form-control" type="date">
-          </label>
-          <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
-            <span>Stock location</span>
-            <select id="outletSelector" class="select-control"></select>
-          </label>
-          <div id="managerOutletBadge" class="manager-badge hidden"></div>
+          <p class="eyebrow">Overview</p>
+          <h3 id="welcomeTitle">Loading Stock Control...</h3>
+          <p id="welcomeText" class="supporting-text">We are fetching current balances and recent stock movements.</p>
         </div>
       </section>
 
       <section class="status-grid">
         <article class="status-card">
-          <p class="card-label">Bill items</p>
-          <strong id="selectedCountValue">0</strong>
-          <span>Line items captured from the current purchase draft.</span>
+          <p class="card-label">Stock value (estimate)</p>
+          <strong id="valuationDisplay">₹0.00</strong>
+          <span>Total valuation based on last purchased item prices.</span>
         </article>
         <article class="status-card">
-          <p class="card-label">Previous purchase</p>
-          <strong id="yesterdayCountValue">0</strong>
-          <span>Use recent bills to compare quantities and rates.</span>
+          <p class="card-label">Low stock alerts</p>
+          <strong id="lowStockCountDisplay">0</strong>
+          <span>Active items at or below low-stock threshold.</span>
         </article>
         <article class="status-card">
           <p class="card-label">Bills needing review</p>
-          <strong id="overviewCountValue">0</strong>
-          <span>Purchase records that should be checked before stock is updated.</span>
+          <strong id="pendingBillsDisplay">0</strong>
+          <span>Unapproved bills in draft or pending review.</span>
         </article>
       </section>
 
-      <section class="panel">
-        <div class="panel-header panel-header-spread">
-          <div>
-            <p class="eyebrow">Bill review workspace</p>
-            <h3>Review purchase lines before stock changes</h3>
-          </div>
-          <div id="workspaceBadge" class="mini-badge">Loading access</div>
-        </div>
+      <div id="setupAlert" class="setup-alert hidden"></div>
 
-        <div id="setupAlert" class="setup-alert hidden"></div>
-
-        <div class="planner-grid">
-          <!-- Left Column: Bill & Item Entry -->
-          <section class="panel panel-soft">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Capture bill items</p>
-                <h3>Bill & line item entry</h3>
-              </div>
-            </div>
-            
-            <form id="purchaseEntryForm" class="details-form" onsubmit="return false;">
-              <div class="form-group">
-                <label for="billVendorId">Vendor <span class="required">*</span></label>
-                <select id="billVendorId" class="select-control" required>
-                  <option value="">Select a vendor...</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="billDate">Bill Date <span class="required">*</span></label>
-                  <input id="billDate" class="form-control" type="date" required>
-                </div>
-                <div class="form-group">
-                  <label for="billNumber">Bill Number</label>
-                  <input id="billNumber" class="form-control" type="text" placeholder="e.g. INV-1234">
-                </div>
-              </div>
-
-              <hr style="border: 0; border-top: 1px solid var(--line); margin: 20px 0;">
-
-              <div class="form-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <label for="billStockItemId" style="margin-bottom: 0;">Stock Item <span class="required">*</span></label>
-                  <button id="addStockItemBtn" class="btn btn-link btn-small" type="button" style="padding: 0; font-size: 0.8rem; height: auto;">+ Add New Stock Item</button>
-                </div>
-                <select id="billStockItemId" class="select-control">
-                  <option value="">Select a stock item...</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="billItemQuantity">Quantity <span class="required">*</span></label>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <input id="billItemQuantity" class="form-control" type="number" step="0.001" min="0.001" placeholder="0.000">
-                    <span id="billItemUnitDisplay" style="font-size: 0.85rem; color: var(--clay); min-width: 40px;">unit</span>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="billItemUnitPrice">Unit Price (₹) <span class="required">*</span></label>
-                  <input id="billItemUnitPrice" class="form-control" type="number" step="0.01" min="0.00" placeholder="0.00">
-                </div>
-              </div>
-
-              <button id="addLineItemBtn" class="btn btn-outline" type="button" style="width: 100%; justify-content: center; margin-top: 10px;">Add Line Item</button>
-            </form>
-          </section>
-
-          <!-- Right Column: Draft Receipt Preview -->
-          <section class="panel panel-soft">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Draft receipt</p>
-                <h3 id="selectedOutletTitle">Purchase bill preview</h3>
-              </div>
-            </div>
-
-            <div class="selection-actions" style="margin-bottom: 15px;">
-              <button id="approveBillBtn" class="btn btn-primary" type="button" disabled>Approve & Save Bill</button>
-              <button id="clearBillBtn" class="btn btn-outline" type="button">Clear</button>
-            </div>
-
-            <div id="saveFeedback" class="inline-feedback hidden"></div>
-            
-            <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
-              <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
-                    <th style="padding: 8px 4px;">Item</th>
-                    <th style="padding: 8px 4px; text-align: right;">Qty</th>
-                    <th style="padding: 8px 4px;">Unit</th>
-                    <th style="padding: 8px 4px; text-align: right;">Rate (₹)</th>
-                    <th style="padding: 8px 4px; text-align: right;">Total (₹)</th>
-                    <th style="padding: 8px 4px; text-align: center;"></th>
-                  </tr>
-                </thead>
-                <tbody id="billItemsBody">
-                  <tr>
-                    <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">No bill items added yet.</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr style="border-top: 2px solid var(--line); font-weight: bold;">
-                    <td colspan="4" style="text-align: right; padding: 10px 5px;">Total:</td>
-                    <td id="billTotalDisplay" style="text-align: right; padding: 10px 5px; color: var(--emerald);">₹0.00</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section class="overview-grid">
-        <section class="panel">
+      <div class="planner-grid" style="margin-top: 20px;">
+        <!-- Left Column: Low Stock Panel -->
+        <section class="panel panel-soft">
           <div class="panel-header">
             <div>
-              <p class="eyebrow">Purchase review</p>
-              <h3>Bills and stock changes for this date</h3>
+              <p class="eyebrow">Attention Required</p>
+              <h3>Low Stock Alerts</h3>
             </div>
           </div>
-          <div id="overviewGrid" class="outlet-overview-grid">
-            <p class="summary-empty">Loading purchase overview.</p>
+          
+          <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+            <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+                  <th style="padding: 8px 4px;">Item</th>
+                  <th style="padding: 8px 4px;">Category</th>
+                  <th style="padding: 8px 4px; text-align: right;">Current Stock</th>
+                  <th style="padding: 8px 4px; text-align: right;">Min Limit</th>
+                  <th style="padding: 8px 4px;">Unit</th>
+                  <th style="padding: 8px 4px; text-align: center;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="lowStockBody">
+                <tr>
+                  <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">Checking stock levels...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
-        <section class="panel">
+        <!-- Right Column: Recent Purchases -->
+        <section class="panel panel-soft">
           <div class="panel-header">
             <div>
-              <p class="eyebrow">WhatsApp workflow</p>
-              <h3>Bill capture coming next</h3>
+              <p class="eyebrow">Purchase Registers</p>
+              <h3>Recent Purchases</h3>
             </div>
           </div>
-          <div class="api-card">
-            <p>Phase 0 reframes this prototype around supplier bills and stock control.</p>
-            <p>The next phase will replace this placeholder with a WhatsApp-style bill paste and approval flow.</p>
+          
+          <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+            <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+                  <th style="padding: 8px 4px;">Date</th>
+                  <th style="padding: 8px 4px;">Vendor</th>
+                  <th style="padding: 8px 4px; text-align: right;">Bill Total</th>
+                  <th style="padding: 8px 4px; text-align: center;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="recentPurchasesBody">
+                <tr>
+                  <td colspan="4" class="summary-empty" style="text-align: center; padding: 30px 10px;">Loading purchases...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <section class="overview-grid" style="margin-top: 20px;">
+        <!-- Left side: Recent Stock Movements -->
+        <section class="panel" style="grid-column: span 2;">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Audit Trail</p>
+              <h3>Recent Stock Movements</h3>
+            </div>
+          </div>
+          <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+            <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+                  <th style="padding: 8px 4px;">Timestamp</th>
+                  <th style="padding: 8px 4px;">Stock Item</th>
+                  <th style="padding: 8px 4px;">Type</th>
+                  <th style="padding: 8px 4px; text-align: right;">Quantity</th>
+                  <th style="padding: 8px 4px;">Unit</th>
+                  <th style="padding: 8px 4px;">Notes / Reason</th>
+                </tr>
+              </thead>
+              <tbody id="recentMovementsBody">
+                <tr>
+                  <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">Loading movements...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
       </section>
     </main>
   </div>
 
-  <!-- Inline Modal for Quick Adding Stock Item -->
-  <div id="quickStockModal" class="modal-overlay hidden">
-    <div class="modal-content animate-fade">
-      <div class="modal-header">
-        <h4>Create New Stock Item</h4>
-        <button id="closeQuickStockModal" class="modal-close-btn" type="button" title="Close">&times;</button>
-      </div>
-      <form id="quickStockForm" class="details-form" onsubmit="return false;">
-        <div class="form-group">
-          <label for="quickStockName">Item Name <span class="required">*</span></label>
-          <input id="quickStockName" class="form-control" type="text" placeholder="e.g. Garlic" required>
-        </div>
-        <div class="form-group">
-          <label for="quickStockCategory">Category <span class="required">*</span></label>
-          <select id="quickStockCategory" class="select-control" required>
-            <option value="">Select category...</option>
-            <option value="Vegetables">Vegetables</option>
-            <option value="Dairy">Dairy</option>
-            <option value="Meat / Protein">Meat / Protein</option>
-            <option value="Dry Goods">Dry Goods</option>
-            <option value="Packaging">Packaging</option>
-            <option value="Cleaning Supplies">Cleaning Supplies</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="quickStockUnit">Default Unit <span class="required">*</span></label>
-            <select id="quickStockUnit" class="select-control" required>
-              <option value="kg">kg</option>
-              <option value="litre">litre</option>
-              <option value="pieces">pieces</option>
-              <option value="box">box</option>
-              <option value="pack">pack</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="quickStockThreshold">Low stock threshold</label>
-            <input id="quickStockThreshold" class="form-control" type="number" step="0.001" min="0" value="0">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="quickStockNotes">Notes</label>
-          <textarea id="quickStockNotes" class="form-control text-area-control" rows="2" placeholder="Storage instructions or description"></textarea>
-        </div>
-        <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 15px;">
-          <button class="btn btn-primary" type="submit" style="flex: 1;">Create Item</button>
-          <button id="cancelQuickStockModal" class="btn btn-outline" type="button" style="flex: 1;">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

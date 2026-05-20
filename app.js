@@ -3,13 +3,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_H5hfJElwUFl-yJR35qtc2w_Fz2MfZRU";
 
 const appState = {
   profile: null,
-  selectedDate: "",
   setupError: "",
-  currentBillItems: [],
   records: {
-    stock_items: [],
-    vendors: [],
-    purchase_bills: []
+    balances: [],
+    recentBills: [],
+    recentMovements: [],
+    pendingBillsCount: 0
   }
 };
 
@@ -111,26 +110,9 @@ function wireDashboardEvents() {
     window.location.href = "index.html";
   });
 
-  document.getElementById("menuDate")?.addEventListener("change", async (event) => {
-    appState.selectedDate = event.target.value;
-    const billDateInput = document.getElementById("billDate");
-    if (billDateInput) {
-      billDateInput.value = appState.selectedDate;
-    }
-    clearFeedback();
-    await loadDashboardData();
-  });
-
   document.getElementById("closeOnboardingBtn")?.addEventListener("click", () => {
     document.getElementById("onboardingGuide").classList.add("hidden");
   });
-
-  document.getElementById("addLineItemBtn")?.addEventListener("click", addLineItem);
-  document.getElementById("approveBillBtn")?.addEventListener("click", saveApprovedBill);
-  document.getElementById("clearBillBtn")?.addEventListener("click", clearBillForm);
-
-  wireStockItemDropdownChange();
-  wireQuickStockModal();
 }
 
 async function setupDashboard(user) {
@@ -144,17 +126,6 @@ async function setupDashboard(user) {
   }
 
   appState.profile = profile;
-  appState.selectedDate = toIsoDate(new Date());
-
-  const dateInput = document.getElementById("menuDate");
-  if (dateInput) {
-    dateInput.value = appState.selectedDate;
-  }
-
-  const billDateInput = document.getElementById("billDate");
-  if (billDateInput) {
-    billDateInput.value = appState.selectedDate;
-  }
 
   renderAccessCopy();
   await loadDashboardData();
@@ -177,7 +148,7 @@ async function fetchCurrentUserProfile(userId) {
 
 function renderMissingProfileState() {
   document.getElementById("userRole").textContent = "Needs setup";
-  document.getElementById("welcomeTitle").textContent = "Your auth user exists, but the app profile is missing";
+  document.getElementById("welcomeTitle").textContent = "Profile missing";
   document.getElementById("welcomeText").textContent =
     "Add a matching row in public.users for this auth user, then reload the page.";
 }
@@ -193,374 +164,105 @@ function renderAccessCopy() {
 
   document.body.classList.add(`role-${profile.role_code}`);
   document.getElementById("userRole").textContent = roleLabel;
-  document.getElementById("workspaceBadge").textContent = isOwner ? "Owner review mode" : "Staff entry mode";
 
   if (isOwner) {
-    document.getElementById("welcomeTitle").textContent = "Review supplier bills before stock changes";
+    document.getElementById("welcomeTitle").textContent = "Welcome back, Owner";
     document.getElementById("welcomeText").textContent =
-      "Use this dashboard to see purchase drafts, recent stock entries, and bills that need owner attention.";
+      "Monitor stock levels, review recent purchase bills, and verify automated ledger status updates.";
   } else {
-    document.getElementById("welcomeTitle").textContent = "Submit purchase bills for owner review";
+    document.getElementById("welcomeTitle").textContent = "Staff stock dashboard";
     document.getElementById("welcomeText").textContent =
-      "Capture supplier bill lines clearly so the owner can approve real stock movement.";
+      "View active warnings and stock records. Use the Purchase Register tab to submit new bills.";
   }
 }
 
 async function loadDashboardData() {
-  // 1. Fetch active stock items
-  const { data: stockItems, error: err1 } = await supabaseClient
-    .from("stock_items")
-    .select("*")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-
-  // 2. Fetch active vendors
-  const { data: vendors, error: err2 } = await supabaseClient
-    .from("vendors")
-    .select("*")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-
-  // 3. Fetch purchase bills
-  const { data: bills, error: err3 } = await supabaseClient
-    .from("purchase_bills")
-    .select(`
-      id,
-      bill_number,
-      bill_date,
-      total,
-      status,
-      vendors (name)
-    `)
-    .eq("bill_date", appState.selectedDate)
-    .order("created_at", { ascending: false });
-
-  appState.records.stock_items = stockItems || [];
-  appState.records.vendors = vendors || [];
-  appState.records.purchase_bills = bills || [];
-  appState.setupError = (err1 || err2 || err3)?.message || "";
-
-  updateSummaryCounts();
-  renderSetupAlert();
-  populateVendorDropdown();
-  populateStockItemDropdown();
-  renderBillItems();
-  renderOverviewGrid();
-}
-
-function populateVendorDropdown() {
-  const select = document.getElementById("billVendorId");
-  if (!select) return;
-
-  const prevVal = select.value;
-  select.innerHTML = '<option value="">Select a vendor...</option>';
-
-  appState.records.vendors.forEach((vendor) => {
-    const opt = document.createElement("option");
-    opt.value = vendor.id;
-    opt.textContent = vendor.name;
-    select.appendChild(opt);
-  });
-
-  if (prevVal) select.value = prevVal;
-}
-
-function populateStockItemDropdown() {
-  const select = document.getElementById("billStockItemId");
-  if (!select) return;
-
-  const prevVal = select.value;
-  select.innerHTML = '<option value="">Select a stock item...</option>';
-
-  appState.records.stock_items.forEach((item) => {
-    const opt = document.createElement("option");
-    opt.value = item.id;
-    opt.textContent = `${item.name} (${item.category})`;
-    select.appendChild(opt);
-  });
-
-  if (prevVal) select.value = prevVal;
-}
-
-function wireStockItemDropdownChange() {
-  const select = document.getElementById("billStockItemId");
-  const display = document.getElementById("billItemUnitDisplay");
-  if (!select || !display) return;
-
-  select.addEventListener("change", () => {
-    const itemId = select.value;
-    const item = appState.records.stock_items.find((x) => x.id === itemId);
-    display.textContent = item ? item.default_unit : "unit";
-  });
-}
-
-function wireQuickStockModal() {
-  const modal = document.getElementById("quickStockModal");
-  const openBtn = document.getElementById("addStockItemBtn");
-  const closeBtn = document.getElementById("closeQuickStockModal");
-  const cancelBtn = document.getElementById("cancelQuickStockModal");
-  const form = document.getElementById("quickStockForm");
-
-  if (!modal) return;
-
-  const openModal = () => {
-    form.reset();
-    modal.classList.remove("hidden");
-  };
-  const closeModal = () => {
-    modal.classList.add("hidden");
-  };
-
-  openBtn?.addEventListener("click", openModal);
-  closeBtn?.addEventListener("click", closeModal);
-  cancelBtn?.addEventListener("click", closeModal);
-
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("quickStockName").value.trim();
-    const category = document.getElementById("quickStockCategory").value;
-    const default_unit = document.getElementById("quickStockUnit").value;
-    const low_stock_threshold = Number(document.getElementById("quickStockThreshold").value || 0);
-    const notes = document.getElementById("quickStockNotes").value.trim() || null;
-
-    if (!name || !category || !default_unit) {
-      alert("Please fill out all required fields.");
-      return;
-    }
-
-    const { data, error } = await supabaseClient
-      .from("stock_items")
-      .insert({
-        name,
-        category,
-        default_unit,
-        low_stock_threshold,
-        notes
-      })
-      .select()
-      .single();
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    closeModal();
-
-    // Reload items
-    const { data: updatedItems } = await supabaseClient
-      .from("stock_items")
+  try {
+    // 1. Fetch current stock balances
+    const { data: balances, error: err1 } = await supabaseClient
+      .from("stock_item_balances")
       .select("*")
       .eq("is_active", true)
       .order("name", { ascending: true });
 
-    appState.records.stock_items = updatedItems || [];
-    populateStockItemDropdown();
+    // 2. Fetch last purchase rate for each item to compute valuation
+    const { data: ratesData, error: err2 } = await supabaseClient
+      .from("purchase_bill_items")
+      .select("stock_item_id, unit_price, purchase_bills!inner(bill_date, status)")
+      .eq("purchase_bills.status", "approved");
 
-    // Automatically select the new item
-    document.getElementById("billStockItemId").value = data.id;
-    document.getElementById("billItemUnitDisplay").textContent = data.default_unit;
-  });
-}
+    // 3. Fetch count of pending review/draft bills
+    const { count: pendingBillsCount, error: err3 } = await supabaseClient
+      .from("purchase_bills")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["draft", "pending_review"]);
 
-function addLineItem() {
-  const stockSelect = document.getElementById("billStockItemId");
-  const qtyInput = document.getElementById("billItemQuantity");
-  const priceInput = document.getElementById("billItemUnitPrice");
+    // 4. Fetch last 5 purchase bills
+    const { data: recentBills, error: err4 } = await supabaseClient
+      .from("purchase_bills")
+      .select("id, bill_number, bill_date, total, status, vendors(name)")
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-  const itemId = stockSelect.value;
-  const quantity = Number(qtyInput.value);
-  const unitPrice = Number(priceInput.value);
+    // 5. Fetch last 10 movements
+    const { data: recentMovements, error: err5 } = await supabaseClient
+      .from("stock_movements")
+      .select("created_at, quantity, unit, movement_type, notes, stock_items(name)")
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-  if (!itemId) {
-    alert("Please select a stock item.");
-    return;
-  }
-  if (!qtyInput.value || quantity <= 0) {
-    alert("Please enter a valid quantity greater than zero.");
-    return;
-  }
-  if (!priceInput.value || unitPrice < 0) {
-    alert("Please enter a valid unit price.");
-    return;
-  }
+    appState.records.balances = balances || [];
+    appState.records.recentBills = recentBills || [];
+    appState.records.recentMovements = recentMovements || [];
+    appState.records.pendingBillsCount = pendingBillsCount || 0;
 
-  const item = appState.records.stock_items.find((x) => x.id === itemId);
-  if (!item) return;
+    appState.setupError = (err1 || err2 || err3 || err4 || err5)?.message || "";
+    renderSetupAlert();
 
-  const existingIndex = appState.currentBillItems.findIndex((x) => x.stock_item_id === itemId);
-  const lineTotal = Number((quantity * unitPrice).toFixed(2));
+    // Process rates to find last price for each stock item
+    const lastRates = {};
+    if (ratesData && ratesData.length > 0) {
+      const sortedRates = [...ratesData].sort((a, b) => {
+        const dateA = new Date(a.purchase_bills.bill_date);
+        const dateB = new Date(b.purchase_bills.bill_date);
+        return dateB - dateA;
+      });
+      sortedRates.forEach((row) => {
+        if (lastRates[row.stock_item_id] === undefined) {
+          lastRates[row.stock_item_id] = Number(row.unit_price);
+        }
+      });
+    }
 
-  if (existingIndex > -1) {
-    appState.currentBillItems[existingIndex].quantity += quantity;
-    appState.currentBillItems[existingIndex].line_total = Number(
-      (appState.currentBillItems[existingIndex].quantity * appState.currentBillItems[existingIndex].unit_price).toFixed(2)
-    );
-  } else {
-    appState.currentBillItems.push({
-      stock_item_id: itemId,
-      name: item.name,
-      quantity,
-      unit: item.default_unit,
-      unit_price: unitPrice,
-      line_total: lineTotal
+    // Render stock valuation
+    let totalValuation = 0;
+    appState.records.balances.forEach((item) => {
+      const qty = Number(item.current_quantity);
+      const rate = lastRates[item.stock_item_id] || 0;
+      if (qty > 0) {
+        totalValuation += qty * rate;
+      }
     });
+
+    document.getElementById("valuationDisplay").textContent = `₹${totalValuation.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+
+    // Render metrics
+    const lowStockItems = appState.records.balances.filter((x) => x.is_low_stock);
+    document.getElementById("lowStockCountDisplay").textContent = String(lowStockItems.length);
+    document.getElementById("pendingBillsDisplay").textContent = String(appState.records.pendingBillsCount);
+
+    // Render lists
+    renderLowStockTable(lowStockItems);
+    renderRecentPurchasesTable();
+    renderRecentMovementsTable();
+  } catch (e) {
+    console.error(e);
+    appState.setupError = "Could not fetch dashboard metrics: " + e.message;
+    renderSetupAlert();
   }
-
-  stockSelect.value = "";
-  qtyInput.value = "";
-  priceInput.value = "";
-  document.getElementById("billItemUnitDisplay").textContent = "unit";
-
-  renderBillItems();
-  updateSummaryCounts();
-}
-
-// Exposed globally so inline HTML onclick attributes can access it
-window.removeBillItem = function (index) {
-  appState.currentBillItems.splice(index, 1);
-  renderBillItems();
-  updateSummaryCounts();
-};
-
-function renderBillItems() {
-  const body = document.getElementById("billItemsBody");
-  const totalDisplay = document.getElementById("billTotalDisplay");
-  const approveBtn = document.getElementById("approveBillBtn");
-
-  if (!body) return;
-
-  if (appState.currentBillItems.length === 0) {
-    body.innerHTML = `
-      <tr>
-        <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">No bill items added yet.</td>
-      </tr>
-    `;
-    totalDisplay.textContent = "₹0.00";
-    approveBtn.disabled = true;
-    return;
-  }
-
-  body.innerHTML = appState.currentBillItems
-    .map((line, idx) => {
-      return `
-      <tr>
-        <td style="padding: 10px 4px;"><strong>${line.name}</strong></td>
-        <td style="padding: 10px 4px; text-align: right;">${line.quantity.toFixed(3)}</td>
-        <td style="padding: 10px 4px; color: var(--clay);">${line.unit}</td>
-        <td style="padding: 10px 4px; text-align: right;">₹${line.unit_price.toFixed(2)}</td>
-        <td style="padding: 10px 4px; text-align: right; font-weight: 500;">₹${line.line_total.toFixed(2)}</td>
-        <td style="padding: 10px 4px; text-align: center;">
-          <button class="btn-delete-row" onclick="window.removeBillItem(${idx})" title="Remove item">&times;</button>
-        </td>
-      </tr>
-    `;
-    })
-    .join("");
-
-  const grandTotal = appState.currentBillItems.reduce((sum, item) => sum + item.line_total, 0);
-  totalDisplay.textContent = `₹${grandTotal.toFixed(2)}`;
-  approveBtn.disabled = false;
-}
-
-function clearBillForm() {
-  appState.currentBillItems = [];
-  document.getElementById("purchaseEntryForm").reset();
-  
-  // Set default values back
-  const dateInput = document.getElementById("billDate");
-  if (dateInput) {
-    dateInput.value = appState.selectedDate;
-  }
-  
-  renderBillItems();
-  updateSummaryCounts();
-  clearFeedback();
-}
-
-async function saveApprovedBill() {
-  clearFeedback();
-
-  const vendorSelect = document.getElementById("billVendorId");
-  const dateInput = document.getElementById("billDate");
-  const billNumberInput = document.getElementById("billNumber");
-
-  const vendorId = vendorSelect.value;
-  const billDate = dateInput.value;
-  const billNumber = billNumberInput.value.trim() || null;
-
-  if (!vendorId) {
-    setFeedback("Please select a vendor.", true);
-    return;
-  }
-  if (!billDate) {
-    setFeedback("Please enter a bill date.", true);
-    return;
-  }
-  if (appState.currentBillItems.length === 0) {
-    setFeedback("Please add at least one line item.", true);
-    return;
-  }
-
-  const grandTotal = appState.currentBillItems.reduce((sum, item) => sum + item.line_total, 0);
-  const isOwner = appState.profile?.role_code === "owner";
-  const status = isOwner ? "approved" : "pending_review";
-
-  const { data: billData, error: headerErr } = await supabaseClient
-    .from("purchase_bills")
-    .insert({
-      vendor_id: vendorId,
-      bill_date: billDate,
-      bill_number: billNumber,
-      subtotal: grandTotal,
-      total: grandTotal,
-      status: status
-    })
-    .select()
-    .single();
-
-  if (headerErr) {
-    alert("Error saving bill: " + headerErr.message);
-    return;
-  }
-
-  const payloadItems = appState.currentBillItems.map((item) => ({
-    purchase_bill_id: billData.id,
-    stock_item_id: item.stock_item_id,
-    raw_item_name: item.name,
-    quantity: item.quantity,
-    unit: item.unit,
-    unit_price: item.unit_price,
-    line_total: item.line_total,
-    match_status: "matched"
-  }));
-
-  const { error: itemsErr } = await supabaseClient
-    .from("purchase_bill_items")
-    .insert(payloadItems);
-
-  if (itemsErr) {
-    alert("Error saving bill items: " + itemsErr.message);
-    return;
-  }
-
-  const successMsg = isOwner
-    ? "Purchase bill approved! Stock quantities updated."
-    : "Purchase bill submitted for owner review.";
-
-  setFeedback(successMsg);
-  clearBillForm();
-  await loadDashboardData();
-}
-
-function updateSummaryCounts() {
-  const currentCount = appState.currentBillItems.length;
-  // Needing review count
-  const needingReview = appState.records.purchase_bills.filter((x) => x.status === "pending_review" || x.status === "draft").length;
-  
-  document.getElementById("selectedCountValue").textContent = String(currentCount);
-  document.getElementById("yesterdayCountValue").textContent = String(appState.records.purchase_bills.filter(x => x.status === 'approved').length);
-  document.getElementById("overviewCountValue").textContent = String(needingReview);
 }
 
 function renderSetupAlert() {
@@ -574,33 +276,70 @@ function renderSetupAlert() {
   }
 
   alert.classList.remove("hidden");
-  alert.textContent = "Database check: " + appState.setupError;
+  alert.textContent = "Data load error: " + appState.setupError;
 }
 
-function renderOverviewGrid() {
-  const container = document.getElementById("overviewGrid");
-  if (!container) return;
+function renderLowStockTable(lowStockItems) {
+  const body = document.getElementById("lowStockBody");
+  if (!body) return;
 
-  if (appState.records.purchase_bills.length === 0) {
-    container.innerHTML = `
-      <article class="overview-card" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; width: 100%;">
-        <p class="summary-empty">No purchase bills recorded for this date.</p>
-      </article>
+  if (lowStockItems.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px; color: var(--emerald);">
+          ✓ All stock items are healthy and above their warning thresholds.
+        </td>
+      </tr>
     `;
     return;
   }
 
-  container.innerHTML = appState.records.purchase_bills
+  body.innerHTML = lowStockItems
+    .map((item) => {
+      const stockQty = Number(item.current_quantity);
+      const threshold = Number(item.low_stock_threshold);
+      const statusPill = stockQty <= 0 
+        ? `<span class="record-pill record-pill-rejected" style="font-size: 0.7rem; padding: 2px 6px;">Out of Stock</span>`
+        : `<span class="record-pill record-pill-pending" style="font-size: 0.7rem; padding: 2px 6px;">Low Stock</span>`;
+
+      return `
+      <tr>
+        <td style="padding: 10px 4px;"><strong>${item.name}</strong></td>
+        <td style="padding: 10px 4px; color: var(--clay);">${item.category}</td>
+        <td style="padding: 10px 4px; text-align: right; font-weight: bold; color: var(--crimson);">${stockQty.toFixed(3)}</td>
+        <td style="padding: 10px 4px; text-align: right; color: var(--clay);">${threshold.toFixed(3)}</td>
+        <td style="padding: 10px 4px; color: var(--clay);">${item.default_unit}</td>
+        <td style="padding: 10px 4px; text-align: center;">${statusPill}</td>
+      </tr>
+    `;
+    })
+    .join("");
+}
+
+function renderRecentPurchasesTable() {
+  const body = document.getElementById("recentPurchasesBody");
+  if (!body) return;
+
+  if (appState.records.recentBills.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="4" class="summary-empty" style="text-align: center; padding: 30px 10px;">No purchase bills found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  body.innerHTML = appState.records.recentBills
     .map((bill) => {
       let badgeClass = "record-pill-muted";
       let statusText = "Draft";
 
       if (bill.status === "approved") {
         badgeClass = "record-pill-live";
-        statusText = "Approved & Added";
+        statusText = "Approved";
       } else if (bill.status === "pending_review") {
         badgeClass = "record-pill-pending";
-        statusText = "Pending Review";
+        statusText = "Pending";
       } else if (bill.status === "rejected") {
         badgeClass = "record-pill-rejected";
         statusText = "Rejected";
@@ -608,49 +347,84 @@ function renderOverviewGrid() {
 
       const formattedDate = new Date(bill.bill_date).toLocaleDateString("en-IN", {
         day: "numeric",
-        month: "short",
-        year: "numeric"
+        month: "short"
       });
 
-      const billRef = bill.bill_number ? `#${bill.bill_number}` : `ID: ${bill.id.slice(0, 8)}`;
-
       return `
-      <article class="record-card">
-        <div class="record-main" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-          <div>
-            <h4 style="margin: 0 0 4px 0;">${bill.vendors?.name || "Unknown Vendor"}</h4>
-            <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--clay);">${formattedDate} - ${billRef}</p>
-            <strong style="font-size: 1.05rem; color: var(--ink);">₹${bill.total.toFixed(2)}</strong>
-          </div>
-          <span class="record-pill ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">${statusText}</span>
-        </div>
-      </article>
+      <tr>
+        <td style="padding: 10px 4px;">${formattedDate}</td>
+        <td style="padding: 10px 4px;"><strong>${bill.vendors?.name || "Unknown"}</strong></td>
+        <td style="padding: 10px 4px; text-align: right; font-weight: 500;">₹${bill.total.toFixed(2)}</td>
+        <td style="padding: 10px 4px; text-align: center;">
+          <span class="record-pill ${badgeClass}" style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;">${statusText}</span>
+        </td>
+      </tr>
     `;
     })
     .join("");
 }
 
-function setFeedback(message, isError = false) {
-  const feedback = document.getElementById("saveFeedback");
-  if (!feedback) return;
-  feedback.classList.remove("hidden", "inline-feedback-error");
-  feedback.textContent = message;
-  if (isError) {
-    feedback.classList.add("inline-feedback-error");
+function renderRecentMovementsTable() {
+  const body = document.getElementById("recentMovementsBody");
+  if (!body) return;
+
+  if (appState.records.recentMovements.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">No stock movements recorded yet.</td>
+      </tr>
+    `;
+    return;
   }
-}
 
-function clearFeedback() {
-  const feedback = document.getElementById("saveFeedback");
-  if (!feedback) return;
-  feedback.classList.add("hidden");
-  feedback.classList.remove("inline-feedback-error");
-  feedback.textContent = "";
-}
+  body.innerHTML = appState.records.recentMovements
+    .map((m) => {
+      const dateObj = new Date(m.created_at);
+      const timeStr = dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+      const dateStr = dateObj.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      const timestamp = `${dateStr} ${timeStr}`;
 
-function toIsoDate(date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
+      let typeClass = "record-pill-muted";
+      let typeText = m.movement_type;
+
+      if (m.movement_type === "purchase_added") {
+        typeClass = "record-pill-live";
+        typeText = "Purchase";
+      } else if (m.movement_type === "usage") {
+        typeClass = "record-pill-muted";
+        typeText = "Usage";
+      } else if (m.movement_type === "wastage") {
+        typeClass = "record-pill-rejected";
+        typeText = "Wastage";
+      } else if (m.movement_type === "opening_stock") {
+        typeClass = "record-pill-pending";
+        typeText = "Opening";
+      } else if (m.movement_type === "return_to_vendor") {
+        typeClass = "record-pill-rejected";
+        typeText = "Return";
+      } else if (m.movement_type === "correction") {
+        typeClass = "record-pill-pending";
+        typeText = "Correction";
+      }
+
+      const qty = Number(m.quantity);
+      // Format with '+' or '-' sign based on movement type direction
+      const isNegative = ["usage", "wastage", "return_to_vendor"].includes(m.movement_type);
+      const sign = isNegative ? "-" : "+";
+      const qtyColor = isNegative ? "var(--crimson)" : "var(--emerald)";
+
+      return `
+      <tr>
+        <td style="padding: 10px 4px; font-size: 0.85rem; color: var(--clay);">${timestamp}</td>
+        <td style="padding: 10px 4px;"><strong>${m.stock_items?.name || "Unknown"}</strong></td>
+        <td style="padding: 10px 4px; text-align: center;">
+          <span class="record-pill ${typeClass}" style="font-size: 0.7rem; padding: 2px 6px;">${typeText}</span>
+        </td>
+        <td style="padding: 10px 4px; text-align: right; font-weight: bold; color: ${qtyColor};">${sign}${qty.toFixed(3)}</td>
+        <td style="padding: 10px 4px; color: var(--clay);">${m.unit}</td>
+        <td style="padding: 10px 4px; font-size: 0.85rem; color: var(--ink);">${m.notes || ""}</td>
+      </tr>
+    `;
+    })
+    .join("");
 }
