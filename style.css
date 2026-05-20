@@ -1,15 +1,15 @@
 :root {
-  --saffron: #d96f32;
-  --marigold: #f3b548;
-  --leaf: #517d4b;
-  --ink: #221b18;
-  --clay: #6d564d;
-  --cream: #f7efe3;
-  --sand: #ecdcc3;
-  --paper: rgba(255, 250, 243, 0.86);
-  --line: rgba(34, 27, 24, 0.12);
-  --danger-color: #b64032;
-  --success-color: #3d7a4a;
+  --saffron: #256f7d;
+  --marigold: #e0a22f;
+  --leaf: #2f7d5f;
+  --ink: #1e2528;
+  --clay: #5d686c;
+  --cream: #f5f7f4;
+  --sand: #dbe5e1;
+  --paper: rgba(255, 255, 255, 0.9);
+  --line: rgba(30, 37, 40, 0.12);
+  --danger-color: #b8473b;
+  --success-color: #2f7d5f;
   --font-body: "Manrope", system-ui, sans-serif;
   --font-display: "Fraunces", Georgia, serif;
 }
@@ -26,10 +26,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-image:
-    radial-gradient(circle at top left, rgba(243, 181, 72, 0.45), transparent 30%),
-    radial-gradient(circle at 85% 10%, rgba(81, 125, 75, 0.22), transparent 26%),
-    linear-gradient(180deg, #fbf5ea 0%, #f6ecde 100%);
+  background:
+    linear-gradient(180deg, #f6f8f7 0%, #edf3f1 48%, #f8f6ef 100%);
 }
 
 .glass-panel {
@@ -38,7 +36,7 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 8px;
-  box-shadow: 0 22px 50px rgba(109, 86, 77, 0.16);
+  box-shadow: 0 22px 50px rgba(40, 56, 60, 0.14);
 }
 
 .btn {
@@ -57,17 +55,17 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--saffron), var(--marigold));
-  color: #fff8f1;
+  background: linear-gradient(135deg, var(--saffron), #319b8f);
+  color: #ffffff;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(217, 111, 50, 0.28);
+  box-shadow: 0 10px 24px rgba(37, 111, 125, 0.24);
 }
 
 .btn-outline {
-  background: rgba(255, 250, 243, 0.6);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
   border: 1px solid var(--line);
 }
@@ -90,7 +88,7 @@ body {
 .form-control {
   width: 100%;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--ink);
@@ -160,8 +158,8 @@ body {
   width: 280px;
   min-height: 100vh;
   padding: 32px 24px;
-  background: rgba(34, 27, 24, 0.92);
-  color: #f6ecde;
+  background: #1e2528;
+  color: #f5f7f4;
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -178,12 +176,12 @@ body {
 .brand-block h1 {
   font-size: 2.2rem;
   line-height: 1.05;
-  color: #fff8f1;
+  color: #ffffff;
 }
 
 .sidebar .eyebrow,
 .sidebar-note .note-label {
-  color: #d8c2a4;
+  color: #b8cac5;
 }
 
 .sidebar-nav {
@@ -211,7 +209,7 @@ body {
 }
 
 .nav-item-active {
-  background: linear-gradient(135deg, rgba(243, 181, 72, 0.22), rgba(217, 111, 50, 0.35));
+  background: linear-gradient(135deg, rgba(49, 155, 143, 0.24), rgba(224, 162, 47, 0.22));
 }
 
 .sidebar-note {
@@ -278,10 +276,10 @@ body {
 .hero-panel,
 .panel,
 .status-card {
-  background: rgba(255, 250, 243, 0.74);
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 8px;
-  box-shadow: 0 20px 48px rgba(109, 86, 77, 0.12);
+  box-shadow: 0 20px 48px rgba(40, 56, 60, 0.1);
 }
 
 .hero-panel {
@@ -387,7 +385,7 @@ body {
 .mini-badge {
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(217, 111, 50, 0.12);
+  background: rgba(37, 111, 125, 0.12);
   color: var(--saffron);
   font-size: 0.82rem;
   font-weight: 700;
@@ -412,7 +410,7 @@ body {
 }
 
 .tab-button-active {
-  background: linear-gradient(135deg, rgba(217, 111, 50, 0.18), rgba(243, 181, 72, 0.28));
+  background: linear-gradient(135deg, rgba(37, 111, 125, 0.16), rgba(224, 162, 47, 0.2));
   color: var(--ink);
 }
 
@@ -446,7 +444,7 @@ body {
 }
 
 .panel-soft {
-  background: rgba(255, 250, 243, 0.48);
+  background: rgba(250, 252, 251, 0.68);
   box-shadow: none;
 }
 
@@ -473,8 +471,8 @@ body {
 }
 
 .dish-option-selected {
-  border-color: rgba(217, 111, 50, 0.45);
-  background: rgba(243, 181, 72, 0.16);
+  border-color: rgba(37, 111, 125, 0.45);
+  background: rgba(49, 155, 143, 0.12);
 }
 
 .dish-checkbox {
@@ -546,7 +544,7 @@ body {
 .overview-dish-list li {
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(243, 181, 72, 0.12);
+  background: rgba(224, 162, 47, 0.12);
 }
 
 .api-card {

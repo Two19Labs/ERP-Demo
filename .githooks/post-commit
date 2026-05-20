@@ -1,0 +1,12 @@
+#!/bin/sh
+
+branch="$(git branch --show-current 2>/dev/null)"
+
+if [ -z "$branch" ]; then
+  echo "autosave: no current branch, skipping push"
+  exit 0
+fi
+
+echo "autosave: pushing committed changes to origin/$branch"
+git push origin "HEAD:$branch"
+

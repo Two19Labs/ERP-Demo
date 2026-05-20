@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ghoomar Thali ERP - Master Data</title>
+  <title>Restaurant Stock Control - Stock Setup</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,30 +12,30 @@
 <body class="app-shell">
   <aside class="sidebar">
     <div class="brand-block">
-      <p class="eyebrow">Ghoomar Thali ERP</p>
-      <h1>Master data for every outlet</h1>
+      <p class="eyebrow">Restaurant Stock Control</p>
+      <h1>Stock items and suppliers for one restaurant</h1>
     </div>
 
     <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="dashboard.html">Menu Planner</a>
-      <a class="nav-item nav-item-active nav-link" href="master-data.html">Master Data</a>
-      <button class="nav-item" type="button" disabled>Procurement</button>
-      <button class="nav-item" type="button" disabled>Bookings</button>
-      <button class="nav-item" type="button" disabled>Billing</button>
-      <button class="nav-item" type="button" disabled>HQ Dashboard</button>
+      <a class="nav-item nav-link" href="dashboard.html">Stock Dashboard</a>
+      <a class="nav-item nav-item-active nav-link" href="master-data.html">Stock Setup</a>
+      <button class="nav-item" type="button" disabled>Bill Capture</button>
+      <button class="nav-item" type="button" disabled>Purchase Register</button>
+      <button class="nav-item" type="button" disabled>Stock Ledger</button>
+      <button class="nav-item" type="button" disabled>Alerts</button>
     </nav>
 
     <div class="sidebar-note">
       <p class="note-label">Current goal</p>
-      <p id="sidebarScope">HQ owns shared dishes and ingredients. Managers maintain only their own vendor list.</p>
+      <p id="sidebarScope">Owner maintains stock items and approved suppliers before staff bills are accepted.</p>
     </div>
   </aside>
 
   <div class="content-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Phase 1</p>
-        <h2>Master Data</h2>
+        <p class="eyebrow">Phase 0</p>
+        <h2>Stock Setup</h2>
       </div>
 
       <div class="topbar-actions">
@@ -51,13 +51,13 @@
       <section class="hero-panel">
         <div>
           <p class="eyebrow">Reference data</p>
-          <h3 id="welcomeTitle">Loading master data</h3>
-          <p id="welcomeText" class="supporting-text">We are checking your outlet access, then loading dishes, ingredients, and vendors.</p>
+          <h3 id="welcomeTitle">Loading stock setup</h3>
+          <p id="welcomeText" class="supporting-text">We are checking your access, then loading stock items, ingredients, and suppliers.</p>
         </div>
 
         <div class="hero-controls">
           <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
-            <span>Vendor list for outlet</span>
+            <span>Approved supplier list</span>
             <select id="outletSelector" class="select-control"></select>
           </label>
           <div id="managerOutletBadge" class="manager-badge hidden"></div>
@@ -66,19 +66,19 @@
 
       <section class="status-grid">
         <article class="status-card">
-          <p class="card-label">Dishes</p>
+          <p class="card-label">Stock items</p>
           <strong id="dishCountValue">-</strong>
-          <span>Shared master list used later for menus and billing.</span>
+          <span>Items the restaurant buys, stores, and tracks.</span>
         </article>
         <article class="status-card">
           <p class="card-label">Ingredients</p>
           <strong id="ingredientCountValue">-</strong>
-          <span>Shared raw material list used for purchases and costing.</span>
+          <span>Raw materials and supplies used for purchase tracking.</span>
         </article>
         <article class="status-card">
           <p class="card-label">Vendors</p>
           <strong id="vendorCountValue">-</strong>
-          <span>Outlet-specific suppliers maintained by each branch.</span>
+          <span>Approved suppliers used to verify incoming bills.</span>
         </article>
       </section>
 
@@ -86,13 +86,13 @@
         <div class="panel-header panel-header-spread">
           <div>
             <p class="eyebrow">Workspace</p>
-            <h3>Manage master records</h3>
+            <h3>Manage stock records</h3>
           </div>
           <div id="workspaceBadge" class="mini-badge">Loading access</div>
         </div>
 
         <div class="tab-strip" role="tablist" aria-label="Master data modules">
-          <button class="tab-button tab-button-active" id="tabDishes" data-tab="dishes" type="button">Dishes</button>
+          <button class="tab-button tab-button-active" id="tabDishes" data-tab="dishes" type="button">Stock Items</button>
           <button class="tab-button" id="tabIngredients" data-tab="ingredients" type="button">Ingredients</button>
           <button class="tab-button" id="tabVendors" data-tab="vendors" type="button">Vendors</button>
         </div>
@@ -104,7 +104,7 @@
             <div class="panel-header">
               <div>
                 <p class="eyebrow" id="listEyebrow">Shared master list</p>
-                <h3 id="listTitle">Dishes</h3>
+          <h3 id="listTitle">Stock items</h3>
               </div>
             </div>
             <div id="listBody" class="record-list">
@@ -116,7 +116,7 @@
             <div class="panel-header">
               <div>
                 <p class="eyebrow" id="formEyebrow">Edit form</p>
-                <h3 id="formTitle">Dish details</h3>
+                <h3 id="formTitle">Stock item details</h3>
               </div>
             </div>
 
@@ -125,32 +125,33 @@
             <form id="dishForm" class="data-form">
               <input type="hidden" id="dishId">
               <div class="form-group">
-                <label for="dishName">Dish name</label>
-                <input id="dishName" class="form-control" type="text" placeholder="Dal Baati Churma" required>
+                <label for="dishName">Stock item name</label>
+                <input id="dishName" class="form-control" type="text" placeholder="Tomatoes" required>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
                   <label for="dishCategory">Category</label>
                   <select id="dishCategory" class="select-control" required>
-                    <option value="Main">Main</option>
-                    <option value="Bread">Bread</option>
-                    <option value="Rice">Rice</option>
-                    <option value="Dessert">Dessert</option>
-                    <option value="Starter">Starter</option>
-                    <option value="Side">Side</option>
-                    <option value="Beverage">Beverage</option>
-                    <option value="Festival">Festival</option>
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Meat / Protein">Meat / Protein</option>
+                    <option value="Dry Goods">Dry Goods</option>
+                    <option value="Spices">Spices</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Packaging">Packaging</option>
+                    <option value="Cleaning Supplies">Cleaning Supplies</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="dishSortOrder">Sort order</label>
+                  <label for="dishSortOrder">Low stock threshold</label>
                   <input id="dishSortOrder" class="form-control" type="number" min="1" value="10" required>
                 </div>
               </div>
               <div class="toggle-row">
                 <label class="toggle-control">
                   <input id="dishIsJain" type="checkbox">
-                  <span>Jain option</span>
+                  <span>Track closely</span>
                 </label>
                 <label class="toggle-control">
                   <input id="dishIsActive" type="checkbox" checked>
@@ -158,8 +159,8 @@
                 </label>
               </div>
               <div class="form-actions">
-                <button class="btn btn-primary" type="submit">Save dish</button>
-                <button class="btn btn-outline" id="dishResetBtn" type="button">New dish</button>
+                <button class="btn btn-primary" type="submit">Save stock item</button>
+                <button class="btn btn-outline" id="dishResetBtn" type="button">New stock item</button>
               </div>
             </form>
 
@@ -167,7 +168,7 @@
               <input type="hidden" id="ingredientId">
               <div class="form-group">
                 <label for="ingredientName">Ingredient name</label>
-                <input id="ingredientName" class="form-control" type="text" placeholder="Besan" required>
+                <input id="ingredientName" class="form-control" type="text" placeholder="Tomatoes" required>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
@@ -211,12 +212,12 @@
               <input type="hidden" id="vendorId">
               <div class="form-group">
                 <label for="vendorName">Vendor name</label>
-                <input id="vendorName" class="form-control" type="text" placeholder="Sharma Dairy" required>
+                <input id="vendorName" class="form-control" type="text" placeholder="Fresh Produce Supplier" required>
               </div>
               <div class="two-column-fields">
                 <div class="form-group">
                   <label for="vendorContactName">Contact name</label>
-                  <input id="vendorContactName" class="form-control" type="text" placeholder="Rakesh Sharma">
+                  <input id="vendorContactName" class="form-control" type="text" placeholder="Primary contact">
                 </div>
                 <div class="form-group">
                   <label for="vendorPhone">Phone</label>
@@ -225,7 +226,7 @@
               </div>
               <div class="form-group">
                 <label for="vendorNotes">Notes</label>
-                <textarea id="vendorNotes" class="form-control text-area-control" rows="4" placeholder="Milk supplier, early morning delivery"></textarea>
+                <textarea id="vendorNotes" class="form-control text-area-control" rows="4" placeholder="Preferred delivery window, payment terms, or quality notes"></textarea>
               </div>
               <div class="toggle-row">
                 <label class="toggle-control">

@@ -1,130 +1,499 @@
-# Ghoomar Thali ERP — Build Plan
+# Universal Restaurant Stock Tracker - Phased Build Plan
 
-## Context
+## Product Direction
 
-Ghoomar Traditional Thali Restaurant — 100% pure veg Rajasthani unlimited thali chain. Currently 3 outlets (Delhi NCR, Guwahati, Patna). Daily rotating menu of 24+ dishes. Today runs on Excel + manual entry. Manager is tech-averse, so the system must be dead simple — 2-3 clicks per task, mobile-first, dropdowns over typing.
+Build a stock-only backend ERP prototype for a single restaurant owner.
 
-## Users
+The product helps owners who currently manage purchases and stock through WhatsApp messages, bill photos, and informal staff updates. The main pain is that supplier bills are hard to verify, stock is not tracked cleanly, and staff can inflate purchases or quantities without the owner noticing.
 
-- **Outlet Manager** — daily data entry. Needs the simplest possible UX.
-- **HQ / Owner** — analytics and cross-outlet visibility.
+This prototype should work for any restaurant, cafe, bakery, cloud kitchen, bar, or food business because every food business buys stock, receives supplier bills, and needs inventory control.
 
-## Tech Stack
+## Product Promise
 
-- Frontend: HTML / CSS / JS (existing base)
-- Backend: Supabase (Postgres + Auth + Realtime)
+> Upload or paste supplier bills, and the system turns them into stock entries, purchase history, vendor price records, and suspicious bill alerts.
 
-## Architectural Decisions Locked In
+## Primary Users
 
-- **Recipe / Ingredient Master = shared HQ-defined**, with per-outlet price variations
-- **Menu is set the day before**, not real-time
-- **Procurement is post-hoc data entry** (record what was bought), not predictive PO generation
-- **Cover count auto-derives** from reservations + walk-ins, not manual entry
-- **Billing is cover-based**, not per-dish
+- **Owner / Operator**
+  - Reviews stock, purchases, vendors, and suspicious bills.
+  - Approves bills before they affect stock.
+  - Wants simple visibility without manual spreadsheet work.
 
----
+- **Staff / Manager**
+  - Uploads or pastes bills.
+  - Can submit purchase details for owner review.
+  - Should not be able to silently change approved history.
 
-## Phase 0 — Foundation
+## Explicit Scope
 
-Set up the spine before building any features.
+## In Scope
 
-- [ ] Define Supabase schema: `outlets`, `users`, `roles`
-- [ ] Auth flow: outlet manager login vs HQ login
-- [ ] Row-level security: managers see only their outlet, HQ sees all
-- [ ] Seed 3 outlets (Delhi NCR, Guwahati, Patna)
-- [ ] Shell layout: sidebar nav, outlet selector for HQ users
+- Single-outlet stock tracking
+- Supplier bill capture
+- Purchase register
+- Stock item master
+- Vendor master
+- Stock ledger
+- Manual usage, wastage, and correction entries
+- Price history
+- Suspicious bill alerts
+- WhatsApp-style bill paste simulation
 
----
+## Out of Scope
 
-## Phase 1 — Master Data
-
-The reference data everything else depends on. Build once, edit rarely.
-
-- [ ] `dishes` table — master list of all Rajasthani dishes Ghoomar can serve
-- [ ] `ingredients` table — master list of raw materials (besan, ghee, dal, etc.)
-- [ ] `vendors` table — per outlet, suppliers they buy from
-- [ ] `dish_ingredients` (optional v2) — recipe mapping for future cost-per-dish analysis
-- [ ] Admin UI for HQ to add/edit dishes and ingredients
-- [ ] Admin UI for outlet manager to manage their own vendor list
-
----
-
-## Phase 2 — Daily Menu Planner
-
-The "what are we serving tomorrow" workflow.
-
-- [ ] `daily_menus` table — outlet_id, date, list of dish_ids
-- [ ] Manager UI: pick tomorrow's date → multi-select dishes from master list → save
-- [ ] Show yesterday's menu as a starting point ("repeat with edits")
-- [ ] Public read endpoint that the menu.ghoomarthali.in page can consume
-- [ ] HQ view: see all 3 outlets' menus for any given date
-
----
-
-## Phase 3 — Daily Procurement Entry
-
-Replaces the Excel pain point.
-
-- [ ] `purchases` table — outlet_id, date, vendor_id, ingredient_id, qty, unit_price
-- [ ] Manager UI: one screen, add row → pick vendor → pick ingredient → enter qty + price
-- [ ] Auto-total at bottom (today's spend)
-- [ ] "Copy yesterday's purchases" button for standing daily items
-- [ ] HQ view: spend per outlet per day, trend over time
-
----
-
-## Phase 4 — Reservations & Walk-ins
-
-Every guest, regardless of channel, ends up in one table.
-
-- [ ] `bookings` table — outlet_id, date, time, party_size, type (reservation/walk-in), occasion, jain_flag, guest_name, phone
-- [ ] Manager UI: quick-add walk-in (party size + go), full form for reservations
-- [ ] Today's bookings view — live list, mark as seated/completed/no-show
-- [ ] Daily cover count auto-calculates from completed bookings
-
----
-
-## Phase 5 — Billing
-
-Cover-based, kept deliberately simple.
-
-- [ ] `thali_prices` table — per outlet, thali type (Regular / Jain / Festival) → price
-- [ ] `bills` table — booking_id, covers × price × tax
-- [ ] Manager UI: select table/booking → pick thali type → covers auto-filled → generate bill
-- [ ] Printable bill format
-- [ ] Bill ties back to booking, closing the revenue loop
-
----
-
-## Phase 6 — HQ Dashboard
-
-The owner's bird-eye view. Build last because it depends on all prior data.
-
-- [ ] Today snapshot: revenue, covers, food cost % per outlet
-- [ ] Trend charts: 7/30/90 day comparisons across outlets
-- [ ] Menu compliance: was today's planned menu actually what was sold?
-- [ ] Food cost outlier alerts (e.g. "Patna spent 40% more on ghee today than usual")
-- [ ] Export to CSV/PDF for accountant
-
----
-
-## Phase 7 — Polish & Mobile
-
-The tech-averse manager test.
-
-- [ ] Mobile responsive pass on every manager-facing screen
-- [ ] Replace every free-text field with a dropdown where possible
-- [ ] Reduce every daily task to ≤ 3 clicks
-- [ ] Offline-tolerant data entry (form holds value if network drops)
-- [ ] One-screen daily summary for manager: "Here's today — covers, spend, revenue"
-
----
-
-## Out of Scope (Explicit)
-
-- Staff scheduling
-- Per-dish a la carte ordering
+- Sales
+- POS
+- Customer billing
+- Reservations
+- Menu planning
+- Multi-outlet operations
+- Full accounting
 - Auto-generated purchase orders
-- Loyalty / CRM
-- Live performance scheduling
-- Kitchen display system
+
+---
+
+# Phase 0 - Product Reframe
+
+## Goal
+
+Remove the restaurant ERP/menu planner direction and lock the app around one job: stock tracking from supplier bills.
+
+## Build
+
+- [x] Rename the product concept to stock tracker / stock control system.
+- [x] Remove menu planning from visible copy.
+- [x] Remove multi-outlet language from visible UI.
+- [x] Replace HQ/outlet framing with owner/staff framing.
+- [x] Rewrite demo story around WhatsApp bills, stock visibility, and inflated bill detection.
+
+## Deliverable
+
+A clear prototype brief and UI direction focused only on stock.
+
+## Success Criteria
+
+- A restaurant owner can understand the product in under 30 seconds.
+- No visible screens imply sales, menus, customer billing, or multi-outlet workflows.
+
+---
+
+# Phase 1 - Core Data Foundation
+
+## Goal
+
+Create the minimum backend structure needed for stock tracking.
+
+## Build
+
+- [ ] Create `users`.
+- [ ] Create `roles` or simple user type: owner/staff.
+- [ ] Create `stock_items`.
+- [ ] Create `vendors`.
+- [ ] Create `purchase_bills`.
+- [ ] Create `purchase_bill_items`.
+- [ ] Create `stock_movements`.
+- [ ] Create basic RLS policies.
+
+## Suggested Tables
+
+## `stock_items`
+
+- id
+- name
+- category
+- default_unit
+- low_stock_threshold
+- is_active
+- notes
+
+## `vendors`
+
+- id
+- name
+- contact_name
+- phone
+- category_supplied
+- notes
+- is_active
+
+## `purchase_bills`
+
+- id
+- vendor_id
+- bill_date
+- bill_number
+- source
+- original_text
+- file_url
+- subtotal
+- extra_charges
+- total
+- status
+- created_by
+- approved_by
+- approved_at
+
+## `purchase_bill_items`
+
+- id
+- purchase_bill_id
+- stock_item_id
+- raw_item_name
+- quantity
+- unit
+- unit_price
+- line_total
+- confidence_score
+- match_status
+
+## `stock_movements`
+
+- id
+- stock_item_id
+- movement_type
+- quantity
+- unit
+- source_bill_item_id
+- notes
+- created_by
+- created_at
+
+## Deliverable
+
+Supabase schema for stock items, vendors, bills, bill lines, and stock movement history.
+
+## Success Criteria
+
+- Owner/staff users can be represented.
+- Purchases can be stored.
+- Stock can be calculated from movements.
+- Every stock increase can be traced back to a bill line.
+
+---
+
+# Phase 2 - Stock Item & Vendor Master
+
+## Goal
+
+Let the owner maintain the master data required before bill tracking works.
+
+## Build
+
+- [ ] Build Stock Items screen.
+- [ ] Add/edit stock item.
+- [ ] Set category, unit, and low-stock threshold.
+- [ ] Activate/deactivate item.
+- [ ] Build Vendors screen.
+- [ ] Add/edit vendor.
+- [ ] Store vendor contact details and notes.
+- [ ] Seed generic demo data.
+
+## Demo Stock Items
+
+- Tomatoes - Vegetables - kg
+- Onions - Vegetables - kg
+- Paneer - Dairy - kg
+- Cooking Oil - Dry Goods - litre
+- Rice - Dry Goods - kg
+- Flour - Dry Goods - kg
+- Chicken - Meat / Protein - kg
+- Paper Containers - Packaging - pieces
+- Cleaning Liquid - Cleaning Supplies - litre
+
+## Demo Vendors
+
+- Fresh Market Supplier
+- Daily Dairy Partner
+- City Dry Goods
+- Packaging Depot
+- Kitchen Cleaning Supply Co.
+
+## Deliverable
+
+Working master data UI for inventory items and suppliers.
+
+## Success Criteria
+
+- Owner can add a new stock item.
+- Owner can add a new vendor.
+- Purchase bill entry can use dropdowns instead of free typing for known items/vendors.
+
+---
+
+# Phase 3 - Manual Purchase Bill Entry
+
+## Goal
+
+Allow the owner or staff to enter supplier bills manually before automation.
+
+## Build
+
+- [ ] Build Purchase Register screen.
+- [ ] Build Add Bill form.
+- [ ] Select vendor.
+- [ ] Add bill date and bill number.
+- [ ] Add multiple line items.
+- [ ] Select stock item, quantity, unit, unit price.
+- [ ] Auto-calculate line totals.
+- [ ] Auto-calculate bill total.
+- [ ] Save as draft.
+- [ ] Approve bill.
+- [ ] On approval, create stock movements.
+
+## Bill Statuses
+
+- Draft
+- Pending Review
+- Approved
+- Rejected
+
+## Deliverable
+
+Manual purchase bill workflow from entry to approval to stock update.
+
+## Success Criteria
+
+- A full supplier bill can be entered.
+- Bill totals are calculated automatically.
+- Approved bills increase stock.
+- Rejected bills do not affect stock.
+
+---
+
+# Phase 4 - Stock Dashboard & Ledger
+
+## Goal
+
+Give the owner immediate visibility into current stock and recent movement.
+
+## Build
+
+- [ ] Build Stock Dashboard.
+- [ ] Show current stock value.
+- [ ] Show low-stock items.
+- [ ] Show recent purchases.
+- [ ] Show recent stock movements.
+- [ ] Build Stock Ledger screen.
+- [ ] Filter ledger by item and date.
+- [ ] Add manual movement form.
+- [ ] Support opening stock, usage, wastage, return, and correction.
+
+## Movement Types
+
+- Opening Stock
+- Purchase Added
+- Usage
+- Wastage
+- Return to Vendor
+- Correction
+
+## Stock Formula
+
+`opening + purchases - usage - wastage - returns + corrections`
+
+## Deliverable
+
+Owner can see current stock and the full movement history behind every item.
+
+## Success Criteria
+
+- Current stock updates after bill approval.
+- Owner can manually record usage or wastage.
+- Low-stock indicators work from item thresholds.
+- Every stock number has traceable movement history.
+
+---
+
+# Phase 5 - WhatsApp-Style Bill Capture
+
+## Goal
+
+Make data entry feel like the owner's current workflow: paste a WhatsApp bill and review the extracted result.
+
+## Build
+
+- [ ] Build Bill Capture screen.
+- [ ] Add chat-style input for pasted bill text.
+- [ ] Parse vendor name, date, item lines, quantities, rates, and totals.
+- [ ] Show extracted bill preview.
+- [ ] Auto-match extracted item names to stock items.
+- [ ] Let owner correct vendor, item matches, quantities, units, and rates.
+- [ ] Save original pasted text for audit.
+- [ ] Submit extracted bill as Pending Review.
+
+## Example Input
+
+```text
+Fresh Market Supplier
+Tomato 10 kg x 42 = 420
+Onion 8 kg x 30 = 240
+Paneer 5 kg x 280 = 1400
+Total 2060
+```
+
+## Deliverable
+
+A demo-ready WhatsApp bill capture workflow.
+
+## Success Criteria
+
+- Owner can paste bill text.
+- System creates editable draft bill lines.
+- Original message is preserved.
+- Confirmed bill follows the same approval and stock update flow as manual entry.
+
+---
+
+# Phase 6 - Price History
+
+## Goal
+
+Show the owner whether today's purchase price makes sense.
+
+## Build
+
+- [ ] Show last purchase price per item.
+- [ ] Show average purchase price per item.
+- [ ] Show highest and lowest recent price.
+- [ ] Show vendor-wise price comparison.
+- [ ] Show item price trend over time.
+- [ ] Add vendor detail page with purchase history.
+- [ ] Add stock item detail page with price history.
+
+## Deliverable
+
+Owner can compare vendor prices and identify expensive purchases.
+
+## Success Criteria
+
+- Owner can answer: "What did I pay for this item last time?"
+- Owner can compare the same item across vendors.
+- Price history is derived from approved purchase bill items.
+
+---
+
+# Phase 7 - Suspicious Bill Alerts
+
+## Goal
+
+Detect simple fraud and mistake patterns that are easy to explain in a demo.
+
+## Build
+
+- [ ] Create `bill_alerts`.
+- [ ] Detect price jumps above configured percentage.
+- [ ] Detect duplicate bill numbers.
+- [ ] Detect bill total mismatch.
+- [ ] Detect unusually high quantities.
+- [ ] Detect unknown vendors.
+- [ ] Detect unknown item names.
+- [ ] Detect unexpected unit changes.
+- [ ] Build Alerts screen.
+- [ ] Let owner mark alerts as accepted, rejected, or resolved.
+
+## Alert Examples
+
+- Tomato price increased 42% compared to last purchase.
+- Same bill number was already uploaded last week.
+- Cooking oil quantity is 3x higher than usual.
+- Bill total is higher than the sum of item lines.
+- Vendor name not found in approved vendor list.
+
+## Deliverable
+
+Suspicious bill detection and review workflow.
+
+## Success Criteria
+
+- Every alert has a plain-language explanation.
+- Alerts appear before or during owner approval.
+- Owner can resolve alerts without deleting the purchase history.
+
+---
+
+# Phase 8 - Bill Upload / OCR Simulation
+
+## Goal
+
+Support the realistic bill-photo workflow without needing full OCR in the first version.
+
+## Build
+
+- [ ] Add bill image/PDF upload UI.
+- [ ] Store uploaded file reference.
+- [ ] Show uploaded bill beside extracted/manual lines.
+- [ ] Add mocked OCR output for demo samples.
+- [ ] Let owner edit OCR results before approval.
+
+## Later Integration
+
+- OCR service
+- WhatsApp Business API
+- Automated document extraction
+- Item alias learning
+
+## Deliverable
+
+Upload flow that demonstrates how bill photos become stock entries.
+
+## Success Criteria
+
+- Owner can attach a bill image/PDF to a purchase.
+- Demo can show extraction from an uploaded bill, even if mocked.
+- Uploaded bill remains linked to the purchase record.
+
+---
+
+# Phase 9 - Owner-Friendly Polish
+
+## Goal
+
+Make the prototype feel simple enough for a non-technical restaurant owner.
+
+## Build
+
+- [ ] Make all screens mobile-friendly.
+- [ ] Use dropdowns and suggestions wherever possible.
+- [ ] Keep bill approval flow short.
+- [ ] Add clear empty states.
+- [ ] Add confirmation messages after important actions.
+- [ ] Make alert explanations simple and direct.
+- [ ] Use generic restaurant sample data.
+- [ ] Remove any remaining cuisine-specific language.
+
+## Deliverable
+
+Demo-ready universal stock tracker.
+
+## Success Criteria
+
+- Owner can understand the dashboard quickly.
+- Staff can submit a bill with minimal training.
+- The demo works for any restaurant category.
+- The app tells one clear story: "stop losing money through messy bills and invisible stock."
+
+---
+
+# Recommended Execution Order
+
+1. **Phase 0** - Reframe the existing UI and copy.
+2. **Phase 1** - Build the stock database foundation.
+3. **Phase 2** - Build item and vendor masters.
+4. **Phase 3** - Build manual bill entry and approval.
+5. **Phase 4** - Build dashboard and stock ledger.
+6. **Phase 5** - Add WhatsApp-style bill capture.
+7. **Phase 6** - Add price history.
+8. **Phase 7** - Add suspicious bill alerts.
+9. **Phase 8** - Add upload/OCR simulation.
+10. **Phase 9** - Polish for demo.
+
+# Demo Story
+
+1. Owner receives supplier bills on WhatsApp.
+2. Staff may inflate prices or quantities.
+3. Owner pastes a supplier bill into the system.
+4. System extracts the bill automatically.
+5. System detects that tomatoes are 42% more expensive than last purchase.
+6. Owner reviews the bill before approving it.
+7. Approved bill updates stock.
+8. Dashboard shows stock levels, purchase spend, and suspicious alerts.

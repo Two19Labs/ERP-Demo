@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ghoomar Thali ERP</title>
+  <title>Restaurant Stock Control</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,30 +12,30 @@
 <body class="app-shell">
   <aside class="sidebar">
     <div class="brand-block">
-      <p class="eyebrow">Ghoomar Thali ERP</p>
-      <h1>Tomorrow's thali plan, outlet by outlet</h1>
+      <p class="eyebrow">Restaurant Stock Control</p>
+      <h1>Purchases, stock, and suspicious bills in one place</h1>
     </div>
 
     <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="master-data.html">Master Data</a>
-      <a class="nav-item nav-item-active nav-link" href="dashboard.html">Menu Planner</a>
-      <button class="nav-item" type="button" disabled>Procurement</button>
-      <button class="nav-item" type="button" disabled>Bookings</button>
-      <button class="nav-item" type="button" disabled>Billing</button>
-      <button class="nav-item" type="button" disabled>HQ Dashboard</button>
+      <a class="nav-item nav-link" href="master-data.html">Stock Setup</a>
+      <a class="nav-item nav-item-active nav-link" href="dashboard.html">Stock Dashboard</a>
+      <button class="nav-item" type="button" disabled>Bill Capture</button>
+      <button class="nav-item" type="button" disabled>Purchase Register</button>
+      <button class="nav-item" type="button" disabled>Stock Ledger</button>
+      <button class="nav-item" type="button" disabled>Alerts</button>
     </nav>
 
     <div class="sidebar-note">
       <p class="note-label">Current goal</p>
-      <p id="sidebarScope">Plan tomorrow's menu from the shared dish master, then reuse yesterday when it saves time.</p>
+      <p id="sidebarScope">Capture supplier bills, approve real purchases, and keep stock movement visible.</p>
     </div>
   </aside>
 
   <div class="content-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Phase 2</p>
-        <h2>Daily Menu Planner</h2>
+        <p class="eyebrow">Phase 0</p>
+        <h2>Stock Control Dashboard</h2>
       </div>
 
       <div class="topbar-actions">
@@ -50,18 +50,18 @@
     <main class="content-main">
       <section class="hero-panel">
         <div>
-          <p class="eyebrow">Tomorrow workflow</p>
-          <h3 id="welcomeTitle">Loading menu planner</h3>
-          <p id="welcomeText" class="supporting-text">We are checking your outlet access and loading the shared dish list.</p>
+          <p class="eyebrow">Owner workflow</p>
+          <h3 id="welcomeTitle">Loading stock tracker</h3>
+          <p id="welcomeText" class="supporting-text">We are checking your access and preparing purchase and stock visibility.</p>
         </div>
 
         <div class="hero-controls hero-controls-stack">
           <label class="selector-wrap" for="menuDate">
-            <span>Menu date</span>
+            <span>Purchase date</span>
             <input id="menuDate" class="form-control" type="date">
           </label>
           <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
-            <span>Planning outlet</span>
+            <span>Stock location</span>
             <select id="outletSelector" class="select-control"></select>
           </label>
           <div id="managerOutletBadge" class="manager-badge hidden"></div>
@@ -70,27 +70,27 @@
 
       <section class="status-grid">
         <article class="status-card">
-          <p class="card-label">Selected dishes</p>
+          <p class="card-label">Bill items</p>
           <strong id="selectedCountValue">0</strong>
-          <span>Count for the menu currently being planned.</span>
+          <span>Line items captured from the current purchase draft.</span>
         </article>
         <article class="status-card">
-          <p class="card-label">Yesterday's menu</p>
+          <p class="card-label">Previous purchase</p>
           <strong id="yesterdayCountValue">0</strong>
-          <span>Use it as a quick starting point and tweak as needed.</span>
+          <span>Use recent bills to compare quantities and rates.</span>
         </article>
         <article class="status-card">
-          <p class="card-label">HQ overview</p>
+          <p class="card-label">Bills needing review</p>
           <strong id="overviewCountValue">0</strong>
-          <span>How many outlet menus exist for the selected date.</span>
+          <span>Purchase records that should be checked before stock is updated.</span>
         </article>
       </section>
 
       <section class="panel">
         <div class="panel-header panel-header-spread">
           <div>
-            <p class="eyebrow">Planning workspace</p>
-            <h3>Build tomorrow's menu</h3>
+            <p class="eyebrow">Bill review workspace</p>
+            <h3>Review purchase lines before stock changes</h3>
           </div>
           <div id="workspaceBadge" class="mini-badge">Loading access</div>
         </div>
@@ -101,32 +101,32 @@
           <section class="panel panel-soft">
             <div class="panel-header panel-header-spread">
               <div>
-                <p class="eyebrow">Dish master</p>
-                <h3>Available dishes</h3>
+                <p class="eyebrow">Stock master</p>
+              <h3>Available stock items</h3>
               </div>
-              <button id="copyYesterdayBtn" class="btn btn-outline" type="button">Copy yesterday</button>
+              <button id="copyYesterdayBtn" class="btn btn-outline" type="button">Use previous bill</button>
             </div>
             <div id="dishPicker" class="dish-picker">
-              <p class="summary-empty">Loading dishes.</p>
+              <p class="summary-empty">Loading stock items.</p>
             </div>
           </section>
 
           <section class="panel panel-soft">
             <div class="panel-header">
               <div>
-                <p class="eyebrow">Selected menu</p>
-                <h3 id="selectedOutletTitle">Outlet menu</h3>
+                <p class="eyebrow">Draft bill</p>
+                <h3 id="selectedOutletTitle">Purchase lines</h3>
               </div>
             </div>
 
             <div class="selection-actions">
-              <button id="saveMenuBtn" class="btn btn-primary" type="button">Save menu</button>
+              <button id="saveMenuBtn" class="btn btn-primary" type="button">Approve bill</button>
               <button id="clearMenuBtn" class="btn btn-outline" type="button">Clear</button>
             </div>
 
             <div id="saveFeedback" class="inline-feedback hidden"></div>
             <div id="selectedMenuList" class="selected-stack">
-              <p class="summary-empty">No dishes selected yet.</p>
+              <p class="summary-empty">No bill items selected yet.</p>
             </div>
           </section>
         </div>
@@ -136,25 +136,25 @@
         <section class="panel">
           <div class="panel-header">
             <div>
-              <p class="eyebrow">HQ view</p>
-              <h3>All outlet menus for this date</h3>
+              <p class="eyebrow">Purchase review</p>
+              <h3>Bills and stock changes for this date</h3>
             </div>
           </div>
           <div id="overviewGrid" class="outlet-overview-grid">
-            <p class="summary-empty">Loading outlet overview.</p>
+            <p class="summary-empty">Loading purchase overview.</p>
           </div>
         </section>
 
         <section class="panel">
           <div class="panel-header">
             <div>
-              <p class="eyebrow">Public feed</p>
-              <h3>Website-ready endpoint</h3>
+              <p class="eyebrow">WhatsApp workflow</p>
+              <h3>Bill capture coming next</h3>
             </div>
           </div>
           <div class="api-card">
-            <p>The Phase 2 SQL creates a public view named <code>public_daily_menu_view</code>.</p>
-            <p>That gives the menu site a read-only menu feed without exposing internal manager fields.</p>
+            <p>Phase 0 reframes this prototype around supplier bills and stock control.</p>
+            <p>The next phase will replace this placeholder with a WhatsApp-style bill paste and approval flow.</p>
           </div>
         </section>
       </section>

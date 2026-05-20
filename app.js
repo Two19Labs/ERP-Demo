@@ -206,7 +206,7 @@ function renderAccessCopy() {
   }
 
   const isHq = profile.role_code === "hq";
-  const roleLabel = profile.role_label || profile.role_code || "User";
+  const roleLabel = isHq ? "Owner" : "Staff";
   const selectorWrap = document.getElementById("outletSelectorWrap");
   const selector = document.getElementById("outletSelector");
   const badge = document.getElementById("managerOutletBadge");
@@ -214,10 +214,10 @@ function renderAccessCopy() {
 
   document.body.classList.add(`role-${profile.role_code}`);
   document.getElementById("userRole").textContent = roleLabel;
-  document.getElementById("workspaceBadge").textContent = isHq ? "HQ planning mode" : "Manager planning mode";
+  document.getElementById("workspaceBadge").textContent = isHq ? "Owner review mode" : "Staff entry mode";
 
   if (isHq) {
-    selectorWrap.classList.remove("hidden");
+    selectorWrap.classList.add("hidden");
     badge.classList.add("hidden");
     selector.innerHTML = "";
 
@@ -232,25 +232,25 @@ function renderAccessCopy() {
       selector.value = appState.selectedOutletId;
     }
 
-    document.getElementById("welcomeTitle").textContent = "Plan menus and compare outlets in one place";
+    document.getElementById("welcomeTitle").textContent = "Review supplier bills before stock changes";
     document.getElementById("welcomeText").textContent =
-      "Pick a date, choose the outlet to edit, and review the chain-wide menu picture below.";
+      "Use this dashboard to see purchase drafts, recent stock entries, and bills that need owner attention.";
     document.getElementById("sidebarScope").textContent =
-      "HQ can plan for any outlet and compare all branches on the same date.";
+      "Owner reviews supplier bills, catches unusual rates, and approves entries before they affect stock.";
   } else {
     selectorWrap.classList.add("hidden");
     badge.classList.remove("hidden");
-    badge.textContent = profile.outlet_name || "Assigned outlet";
-    document.getElementById("welcomeTitle").textContent = `${profile.outlet_name} menu planner`;
+    badge.textContent = profile.full_name || "Staff access";
+    document.getElementById("welcomeTitle").textContent = "Submit purchase bills for owner review";
     document.getElementById("welcomeText").textContent =
-      "Pick tomorrow's menu from the shared dish list, or copy yesterday and make quick edits.";
+      "Capture supplier bill lines clearly so the owner can approve real stock movement.";
     document.getElementById("sidebarScope").textContent =
-      `You are scoped to ${profile.outlet_name}. The saved menu applies only to this outlet.`;
+      "Staff can prepare bill drafts. Owner approval will become the gate before stock is updated.";
   }
 
   document.getElementById("selectedOutletTitle").textContent = currentOutlet
-    ? `${currentOutlet.name} menu`
-    : "Outlet menu";
+    ? "Purchase lines"
+    : "Purchase lines";
 }
 
 async function loadPlannerData() {
@@ -285,7 +285,7 @@ async function fetchDishes() {
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("Error fetching dishes:", error);
+    console.error("Error fetching stock items:", error);
   }
 
   return { data: data || [], error };
@@ -318,7 +318,7 @@ async function fetchCurrentMenu() {
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching current menu:", error);
+    console.error("Error fetching current purchase draft:", error);
     return { menuId: null, items: [], error };
   }
 
@@ -353,7 +353,7 @@ async function fetchYesterdayMenu() {
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching yesterday menu:", error);
+    console.error("Error fetching previous purchase draft:", error);
     return { items: [], error };
   }
 
@@ -372,7 +372,7 @@ async function fetchOverviewMenus() {
     .order("outlet_name", { ascending: true });
 
   if (error) {
-    console.error("Error fetching menu overview:", error);
+    console.error("Error fetching purchase overview:", error);
     return { data: [], error };
   }
 
@@ -406,7 +406,7 @@ function renderSetupAlert() {
 
   alert.classList.remove("hidden");
   alert.textContent =
-    "Menu Planner tables are not ready in Supabase yet. Run the Phase 2 SQL file, then reload. Latest error: " +
+    "Stock tracking tables are not ready in Supabase yet. Phase 1 will replace the legacy menu tables with stock tables. Latest error: " +
     appState.setupError;
 }
 
@@ -414,7 +414,7 @@ function renderDishPicker() {
   const picker = document.getElementById("dishPicker");
 
   if (!appState.records.dishes.length) {
-    picker.innerHTML = '<p class="summary-empty">No active dishes yet. Add dishes in Phase 1 first.</p>';
+    picker.innerHTML = '<p class="summary-empty">No active stock items yet. Add items in Stock Setup first.</p>';
     return;
   }
 
@@ -426,7 +426,7 @@ function renderDishPicker() {
           <input class="dish-checkbox" type="checkbox" value="${dish.id}" ${checked ? "checked" : ""}>
           <span class="dish-option-body">
             <strong>${dish.name}</strong>
-            <small>${dish.category}${dish.is_jain ? " - Jain available" : ""}</small>
+            <small>${dish.category}${dish.is_jain ? " - Track closely" : ""}</small>
           </span>
         </label>
       `;
@@ -462,7 +462,7 @@ function renderSelectedMenu() {
   });
 
   if (!sortedSelected.length) {
-    selectedStack.innerHTML = '<p class="summary-empty">No dishes selected yet.</p>';
+    selectedStack.innerHTML = '<p class="summary-empty">No bill items selected yet.</p>';
     return;
   }
 
@@ -472,7 +472,7 @@ function renderSelectedMenu() {
         <article class="selected-card">
           <div>
             <strong>${index + 1}. ${dish.name}</strong>
-            <p>${dish.category}${dish.is_jain ? " - Jain available" : ""}</p>
+            <p>${dish.category}${dish.is_jain ? " - Track closely" : ""}</p>
           </div>
           <button class="btn btn-outline btn-small" type="button" data-remove-dish="${dish.id}">
             Remove
@@ -495,36 +495,25 @@ function renderSelectedMenu() {
 
 function renderOverviewGrid() {
   const container = document.getElementById("overviewGrid");
-  const cards = appState.accessibleOutlets.map((outlet) => {
-    const existing = appState.records.overviewMenus.find((item) => item.outlet_id === outlet.id);
-    const dishes = existing?.dishes_json || [];
-
-    return `
-      <article class="overview-card">
-        <div class="panel-header">
-          <div>
-            <p class="eyebrow">${outlet.city}</p>
-            <h3>${outlet.name}</h3>
-          </div>
+  container.innerHTML = `
+    <article class="overview-card">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Bill review</p>
+          <h3>Supplier bills will appear here</h3>
         </div>
-        ${
-          dishes.length
-            ? `<ul class="overview-dish-list">${dishes.map((dish) => `<li>${dish.name}</li>`).join("")}</ul>`
-            : '<p class="summary-empty">No menu saved for this date yet.</p>'
-        }
-      </article>
-    `;
-  });
-
-  container.innerHTML = cards.join("");
+      </div>
+      <p class="summary-empty">Phase 1 will add purchase bills and stock movements. For now this screen is reframed around the stock-control workflow.</p>
+    </article>
+  `;
 }
 
 async function copyYesterdayMenu() {
   appState.selectedDishIds = appState.records.yesterdayMenuItems.map((item) => item.dish_id);
   setFeedback(
     appState.selectedDishIds.length
-      ? "Yesterday's menu has been copied into today's draft."
-      : "There was no menu yesterday, so the draft stayed empty."
+      ? "The previous purchase draft has been copied for review."
+      : "There was no previous purchase draft, so this draft stayed empty."
   );
   updateSummaryCounts();
   renderDishPicker();
@@ -543,12 +532,12 @@ async function saveMenu() {
   clearFeedback();
 
   if (!appState.selectedOutletId || !appState.selectedDate) {
-    setFeedback("Choose an outlet and date before saving.", true);
+    setFeedback("Choose a purchase date before saving.", true);
     return;
   }
 
   if (!appState.selectedDishIds.length) {
-    setFeedback("Select at least one dish before saving.", true);
+    setFeedback("Select at least one bill item before saving.", true);
     return;
   }
 
@@ -597,7 +586,7 @@ async function saveMenu() {
   }
 
   appState.menuId = menuId;
-  setFeedback("Menu saved.");
+  setFeedback("Purchase draft saved.");
   await loadPlannerData();
 }
 

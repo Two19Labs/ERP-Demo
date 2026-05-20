@@ -145,13 +145,13 @@ function renderAccessCopy() {
 
   const isHq = profile.role_code === "hq";
   document.body.classList.add(`role-${profile.role_code}`);
-  document.getElementById("userRole").textContent = profile.role_label || profile.role_code || "User";
-  document.getElementById("workspaceBadge").textContent = isHq ? "HQ editing mode" : "Manager editing mode";
+  document.getElementById("userRole").textContent = isHq ? "Owner" : "Staff";
+  document.getElementById("workspaceBadge").textContent = isHq ? "Owner setup mode" : "Staff setup mode";
 
   if (isHq) {
     const selectorWrap = document.getElementById("outletSelectorWrap");
     const selector = document.getElementById("outletSelector");
-    selectorWrap.classList.remove("hidden");
+    selectorWrap.classList.add("hidden");
     selector.innerHTML = "";
     appState.accessibleOutlets.forEach((outlet) => {
       const option = document.createElement("option");
@@ -162,21 +162,21 @@ function renderAccessCopy() {
     if (appState.selectedOutletId) {
       selector.value = appState.selectedOutletId;
     }
-    document.getElementById("welcomeTitle").textContent = "HQ controls shared master data";
+    document.getElementById("welcomeTitle").textContent = "Set up stock items and approved suppliers";
     document.getElementById("welcomeText").textContent =
-      "Add and edit dishes and ingredients for the full chain, then switch outlets to manage each branch's vendors.";
+      "Keep the item and supplier lists clean so bills can be checked before they affect stock.";
   } else {
     const badge = document.getElementById("managerOutletBadge");
     badge.classList.remove("hidden");
-    badge.textContent = profile.outlet_name || "Assigned outlet";
-    document.getElementById("welcomeTitle").textContent = `${profile.outlet_name} branch workspace`;
+    badge.textContent = profile.full_name || "Staff access";
+    document.getElementById("welcomeTitle").textContent = "Stock setup for bill capture";
     document.getElementById("welcomeText").textContent =
-      "Managers can review the shared dish and ingredient lists and maintain only their own vendor list.";
+      "Staff can help maintain suppliers and stock records, with owner controls added in the next phase.";
   }
 
   document.getElementById("sidebarScope").textContent = isHq
-    ? "Shared masters stay at HQ. Vendor lists remain outlet specific."
-    : `You are scoped to ${profile.outlet_name}. Vendor edits stay inside this outlet.`;
+    ? "Owner maintains the stock master and approved supplier list."
+    : "Staff prepares stock records for owner review.";
 }
 
 async function loadMasterData() {
@@ -235,7 +235,7 @@ function renderSetupAlert() {
   }
   alert.classList.remove("hidden");
   alert.textContent =
-    "Master Data tables are not ready in Supabase yet. Run the Phase 1 SQL file, then reload. Latest error: " +
+    "Stock setup tables are not ready in Supabase yet. Phase 1 will replace the legacy master data tables with stock tables. Latest error: " +
     appState.setupError;
 }
 
@@ -257,23 +257,23 @@ function renderFormPanel() {
   const tab = appState.currentTab;
   const tabConfig = {
     dishes: {
-      title: "Dish details",
-      eyebrow: "HQ shared master",
-      hint: isHq ? "Keep the master list clean and predictable." : "Dishes are controlled by HQ.",
+      title: "Stock item details",
+      eyebrow: "Stock master",
+      hint: isHq ? "Keep item names, categories, and thresholds clean so bills are easy to verify." : "Stock items are controlled by the owner.",
       editable: isHq
     },
     ingredients: {
       title: "Ingredient details",
-      eyebrow: "HQ shared master",
-      hint: isHq ? "Use a stable base unit so procurement and cost tracking stay clean later." : "Ingredients are controlled by HQ.",
+      eyebrow: "Raw material master",
+      hint: isHq ? "Use a stable base unit so purchase tracking and stock calculations stay clean later." : "Ingredients are controlled by the owner.",
       editable: isHq
     },
     vendors: {
       title: "Vendor details",
-      eyebrow: appState.profile?.role_code === "hq" ? "Outlet vendor list" : "Your vendor list",
+      eyebrow: "Approved supplier list",
       hint: appState.profile?.role_code === "hq"
-        ? "You are editing the vendor list for the currently selected outlet."
-        : "You can maintain vendors only for your own outlet.",
+        ? "Approved suppliers help the owner spot unknown or suspicious bills."
+        : "Supplier edits should be reviewed by the owner.",
       editable: true
     }
   }[tab];
@@ -304,9 +304,9 @@ function renderListPanel() {
   const listTitle = document.getElementById("listTitle");
 
   const configs = {
-    dishes: { eyebrow: "Shared master list", title: "Dishes", records: appState.records.dishes, renderer: renderDishCard },
-    ingredients: { eyebrow: "Shared master list", title: "Ingredients", records: appState.records.ingredients, renderer: renderIngredientCard },
-    vendors: { eyebrow: "Outlet supplier list", title: `Vendors${getCurrentOutlet() ? ` for ${getCurrentOutlet().name}` : ""}`, records: appState.records.vendors, renderer: renderVendorCard }
+    dishes: { eyebrow: "Stock master", title: "Stock items", records: appState.records.dishes, renderer: renderDishCard },
+    ingredients: { eyebrow: "Raw material list", title: "Ingredients", records: appState.records.ingredients, renderer: renderIngredientCard },
+    vendors: { eyebrow: "Approved supplier list", title: "Vendors", records: appState.records.vendors, renderer: renderVendorCard }
   };
 
   const config = configs[tab];
@@ -344,10 +344,10 @@ function renderDishCard(dish) {
       <div class="record-main">
         <div>
           <h4>${dish.name}</h4>
-          <p>${dish.category} - Order ${dish.service_order}</p>
+          <p>${dish.category} - Low stock threshold ${dish.service_order}</p>
         </div>
         <div class="pill-row">
-          ${dish.is_jain ? '<span class="record-pill">Jain</span>' : ""}
+          ${dish.is_jain ? '<span class="record-pill">Track closely</span>' : ""}
           <span class="record-pill ${dish.is_active ? "record-pill-live" : "record-pill-muted"}">${dish.is_active ? "Active" : "Inactive"}</span>
         </div>
       </div>
@@ -381,7 +381,7 @@ function renderVendorCard(vendor) {
         <div>
           <h4>${vendor.name}</h4>
           <p>${secondaryLine || "No contact details yet"}</p>
-          <p>${outlet ? `${outlet.name} - ${outlet.city}` : ""}</p>
+          <p>${outlet ? "Approved supplier" : ""}</p>
         </div>
         <span class="record-pill ${vendor.is_active ? "record-pill-live" : "record-pill-muted"}">${vendor.is_active ? "Active" : "Inactive"}</span>
       </div>
