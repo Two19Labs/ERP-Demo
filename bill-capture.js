@@ -1,6 +1,6 @@
 const SUPABASE_URL = "https://xbaihdutmydielypymlv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_H5hfJElwUFl-yJR35qtc2w_Fz2MfZRU";
-const HF_DEFAULT_API_KEY = "hf_" + "jTEKRbZvsEXudTFPcMIepMrWanZHhGMKsl";
+const HF_DEFAULT_API_KEY = "";
 
 const appState = {
   profile: null,
