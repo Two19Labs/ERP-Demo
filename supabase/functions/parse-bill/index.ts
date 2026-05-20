@@ -27,7 +27,9 @@ serve(async (req) => {
       "cloudflare.com": await testDns("https://cloudflare.com"),
       "github.com": await testDns("https://github.com"),
       "huggingface.co": await testDns("https://huggingface.co"),
-      "api-inference.huggingface.co": await testDns("https://api-inference.huggingface.co")
+      "api-inference.huggingface.co": await testDns("https://api-inference.huggingface.co"),
+      "router.huggingface.co": await testDns("https://router.huggingface.co"),
+      "hf-mirror.com": await testDns("https://hf-mirror.com")
     };
 
     throw new Error(`DNS Diagnostics: ${JSON.stringify(report)}`);
