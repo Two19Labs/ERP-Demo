@@ -662,7 +662,21 @@ async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
   });
 
   if (error) {
-    throw new Error(`Edge Function: ${error.message || error}`);
+    let errMsg = error.message || error;
+    if (error.context && typeof error.context.json === 'function') {
+      try {
+        const body = await error.context.json();
+        if (body && body.error) {
+          errMsg = body.error;
+        }
+      } catch (e) {
+        try {
+          const txt = await error.context.text();
+          if (txt) errMsg = txt;
+        } catch (e2) {}
+      }
+    }
+    throw new Error(errMsg);
   }
 
   if (data && data.error) {
