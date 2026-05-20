@@ -801,9 +801,11 @@ async function saveCapturedBill() {
 
       feedback.className = "inline-feedback";
       feedback.textContent = `Success! Bill ${billNumber || billId.substring(0, 8)} approved. Stock ledger updated.`;
+      window.showToast?.("Bill approved. Stock ledger updated.", "success");
     } else {
       feedback.className = "inline-feedback";
       feedback.textContent = `Success! Bill submitted for Owner review.`;
+      window.showToast?.("Bill submitted for owner review.", "success");
     }
 
     feedback.classList.remove("hidden");

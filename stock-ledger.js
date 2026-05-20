@@ -359,11 +359,12 @@ async function saveManualMovement() {
     });
 
   if (error) {
-    alert("Error logging movement: " + error.message);
+    window.showToast?.("Error logging movement: " + error.message, "error");
     return;
   }
 
   setFeedback("Stock movement logged successfully!");
+  window.showToast?.("Stock movement logged.", "success");
   
   // Reset form
   itemSelect.value = "";
@@ -456,8 +457,9 @@ async function executeGlobalDelete() {
   const { error } = await supabaseClient.from("stock_movements").delete().eq("id", id);
 
   if (error) {
-    alert("Delete failed: " + error.message);
+    window.showToast?.("Delete failed: " + error.message, "error");
   } else {
+    window.showToast?.("Movement deleted.", "success");
     await loadLedgerData();
   }
   hideDeleteModal();

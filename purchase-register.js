@@ -523,6 +523,7 @@ async function saveApprovedBill() {
     : "Purchase bill submitted for owner review.";
 
   setFeedback(successMsg);
+  window.showToast?.(successMsg, "success");
   clearBillForm();
   await loadRegisterData();
 }
@@ -547,8 +548,14 @@ function renderOverviewGrid() {
 
   if (appState.records.purchase_bills.length === 0) {
     container.innerHTML = `
-      <article class="overview-card" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; width: 100%;">
-        <p class="summary-empty">No purchase bills recorded for this date.</p>
+      <article class="overview-card" style="grid-column: 1 / -1; padding: 40px 20px; width: 100%;">
+        <div class="placeholder-view" style="padding: 0;">
+          <div class="placeholder-icon" style="font-size: 2.2rem;">🧾</div>
+          <h4 style="margin: 4px 0 6px 0;">No bills for this date</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 320px; line-height: 1.4;">
+            Try another date, or add a bill using the form on the left.
+          </p>
+        </div>
       </article>
     `;
     return;
@@ -680,8 +687,9 @@ async function executeGlobalDelete() {
   const { error } = await supabaseClient.from("purchase_bills").delete().eq("id", id);
 
   if (error) {
-    alert("Delete failed: " + error.message);
+    window.showToast?.("Delete failed: " + error.message, "error");
   } else {
+    window.showToast?.("Purchase bill deleted.", "success");
     await loadRegisterData();
   }
   hideDeleteModal();

@@ -287,8 +287,9 @@ async function resolveAlertInline(alertId, newStatus) {
 
     await loadAlertsData();
     await loadActiveAlertsBadge();
+    window.showToast?.(newStatus === "resolved" ? "Alert resolved." : "Alert dismissed.", "success");
   } catch (err) {
-    alert(`Failed to update alert: ${err.message}`);
+    window.showToast?.(`Failed to update alert: ${err.message}`, "error");
   }
 }
 

@@ -330,7 +330,19 @@ function renderListPanel() {
   listTitle.textContent = config.title;
 
   if (!config.records.length) {
-    listBody.innerHTML = '<p class="summary-empty">No records yet.</p>';
+    const isOwner = appState.profile?.role_code === "owner";
+    const label = tab === "stock_items" ? "stock item" : "vendor";
+    const icon = tab === "stock_items" ? "📦" : "🤝";
+    const cta = isOwner
+      ? `Click <strong>+ New ${tab === "stock_items" ? "Stock Item" : "Vendor"}</strong> above to add your first one.`
+      : "Ask the owner to add one before submitting bills.";
+    listBody.innerHTML = `
+      <div class="placeholder-view" style="padding: 30px 15px;">
+        <div class="placeholder-icon" style="font-size: 2.2rem;">${icon}</div>
+        <h4 style="margin: 4px 0 6px 0;">No ${label}s yet</h4>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 280px; line-height: 1.4;">${cta}</p>
+      </div>
+    `;
     return;
   }
 
@@ -950,9 +962,10 @@ async function saveStockItem(event) {
   const query = id ? supabaseClient.from("stock_items").update(payload).eq("id", id) : supabaseClient.from("stock_items").insert(payload);
   const { error } = await query;
   if (error) {
-    alert(error.message);
+    window.showToast?.(error.message, "error");
     return;
   }
+  window.showToast?.(id ? "Stock item updated." : "Stock item added.", "success");
   resetStockItemForm();
   await loadMasterData();
 }
@@ -972,9 +985,10 @@ async function saveVendor(event) {
   const query = id ? supabaseClient.from("vendors").update(payload).eq("id", id) : supabaseClient.from("vendors").insert(payload);
   const { error } = await query;
   if (error) {
-    alert(error.message);
+    window.showToast?.(error.message, "error");
     return;
   }
+  window.showToast?.(id ? "Vendor updated." : "Vendor added.", "success");
   resetVendorForm();
   await loadMasterData();
 }
@@ -1035,10 +1049,11 @@ async function executeGlobalDelete() {
   const { error } = await supabaseClient.from(table).delete().eq("id", id);
   
   if (error) {
-    alert("Delete failed: " + error.message);
+    window.showToast?.("Delete failed: " + error.message, "error");
   } else {
     if (type === "stock_item") resetStockItemForm();
     else resetVendorForm();
+    window.showToast?.(type === "stock_item" ? "Stock item deleted." : "Vendor deleted.", "success");
     await loadMasterData();
   }
   hideDeleteModal();
