@@ -64,19 +64,16 @@ function wireCaptureEvents() {
 
   document.getElementById("demoBtn1")?.addEventListener("click", () => {
     document.getElementById("rawBillText").value = `Fresh Market Supplier
-Tomato 10 kg x 42 = 420
-Onion 8 kg x 30 = 240
-Paneer 5 kg x 280 = 1400
-Total 2060`;
+I bought tomato for 10 rupees per kilo and I bought 100 kilos
+Total 1000`;
   });
 
   document.getElementById("demoBtn2")?.addEventListener("click", () => {
     document.getElementById("rawBillText").value = `City Dry Goods
 Bill No: CDG-4482
 Bill Date: 2026-05-20
-Rice 25 kg @ 60 = 1500
-Cooking Oil 10 litre @ 110 = 1100
-Flour 15 kg @ 40 = 600
+Rice 25 kg @ 60 rs and cooking oil 10 litres for 110 per ltr
+Flour 15 kg for 600 total
 Total 3200`;
   });
 
@@ -260,7 +257,7 @@ function populateVendorDropdown() {
   });
 }
 
-function fuzzyMatchStockItem(rawName, stockItems) {
+function fuzzyMatchStockItemInternal(rawName, stockItems) {
   const name = rawName.trim().toLowerCase();
   let bestMatch = null;
   let bestScore = 0;
@@ -307,6 +304,24 @@ function fuzzyMatchStockItem(rawName, stockItems) {
   }
 
   return bestMatch;
+}
+
+function fuzzyMatchStockItem(rawName, stockItems) {
+  // First attempt: match the whole string
+  const matchedId = fuzzyMatchStockItemInternal(rawName, stockItems);
+  if (matchedId) return matchedId;
+
+  // Second attempt: tokenize and try to match individual words
+  const words = rawName.split(/\s+/).map(w => w.trim().replace(/[^a-zA-Z]/g, "")).filter(w => w.length > 2);
+  const stopWords = new Set(["bought", "received", "delivered", "with", "from", "for", "the", "and", "also", "kilo", "kilos", "litre", "litres", "total"]);
+  
+  for (const word of words) {
+    if (stopWords.has(word.toLowerCase())) continue;
+    const wordMatchedId = fuzzyMatchStockItemInternal(word, stockItems);
+    if (wordMatchedId) return wordMatchedId;
+  }
+
+  return null;
 }
 
 function parseWhatsAppText(text, vendors, stockItems) {
@@ -374,7 +389,7 @@ function parseWhatsAppText(text, vendors, stockItems) {
     }
   }
 
-  // 5. Scan for Items
+  // 5. Scan for Items using the new Natural Language Parser
   const itemLines = lines.filter(line => {
     const lower = line.toLowerCase();
     if (lower.includes("total") || lower.includes("grand total") || lower.includes("invoice") || lower.includes("bill no")) {
@@ -388,59 +403,204 @@ function parseWhatsAppText(text, vendors, stockItems) {
   });
 
   for (const line of itemLines) {
-    // Regex e.g. "Tomato 10 kg x 42 = 420"
-    const itemRegex = /^([^0-9\-]+?)\s+(\d+(?:\.\d+)?)\s*(kg|kg\.|kgs|litre|litres|ltr|ltrs|pcs|pieces|pieces\.|units|unit|pkts|pkt|packs|pack)?\s*(?:x|@|\*|at)?\s*(\d+(?:\.\d+)?)(?:\s*(?:=|[rR]?[sS]?\.?)\s*(\d+(?:\.\d+)?))?$/i;
-    let match = line.match(itemRegex);
-
-    // Fallback: "Rice 25 kg = 1250"
-    if (!match) {
-      const fallbackRegex = /^([^0-9\-]+?)\s+(\d+(?:\.\d+)?)\s*(kg|kg\.|kgs|litre|litres|ltr|ltrs|pcs|pieces|pieces\.|units|unit|pkts|pkt|packs|pack)?\s*(?:=|[rR]?[sS]?\.?)\s*(\d+(?:\.\d+)?)$/i;
-      const m2 = line.match(fallbackRegex);
-      if (m2) {
-        const qty = parseFloat(m2[2]);
-        const lineTotal = parseFloat(m2[4]);
-        const rate = qty > 0 ? (lineTotal / qty) : 0;
-        match = [line, m2[1], m2[2], m2[3], rate.toString(), lineTotal.toString()];
-      }
-    }
-
-    // Fallback 2: "Flour 5 kg"
-    if (!match) {
-      const nameQtyRegex = /^([^0-9\-]+?)\s+(\d+(?:\.\d+)?)\s*(kg|kg\.|kgs|litre|litres|ltr|ltrs|pcs|pieces|pieces\.|units|unit|pkts|pkt|packs|pack)?$/i;
-      const m3 = line.match(nameQtyRegex);
-      if (m3) {
-        match = [line, m3[1], m3[2], m3[3] || "kg", "0", "0"];
-      }
-    }
-
-    if (match) {
-      const rawName = match[1].trim();
-      const qty = parseFloat(match[2]);
-      let unit = (match[3] || "").trim().toLowerCase();
-      
-      // Standardize units
-      if (unit.startsWith("kg")) unit = "kg";
-      else if (unit.startsWith("lit") || unit.startsWith("ltr")) unit = "litre";
-      else if (unit.startsWith("pc") || unit.startsWith("unit")) unit = "pieces";
-      else unit = "kg"; // default fallback
-
-      const rate = parseFloat(match[4] || 0);
-      const lineTotal = parseFloat(match[5]) || (qty * rate);
-
-      const matchedItemId = fuzzyMatchStockItem(rawName, stockItems);
-
-      result.items.push({
-        rawName: rawName,
-        matchedItemId: matchedItemId || "",
-        quantity: qty,
-        unit: unit,
-        unitPrice: rate,
-        lineTotal: lineTotal
-      });
-    }
+    const parsedLines = parseNaturalLanguageLine(line, stockItems);
+    parsedLines.forEach(item => {
+      result.items.push(item);
+    });
   }
 
   return result;
+}
+
+function parseNaturalLanguageLine(line, stockItems) {
+  // Pre-clean dates and bill numbers so they don't interfere with standalone numbers
+  let cleanedLine = line.replace(/\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/g, "");
+  cleanedLine = cleanedLine.replace(/(?:bill|invoice|inv|no|num|number)[:\s\.\#]+[a-zA-Z0-9\-]+/gi, "");
+
+  const lowerLine = cleanedLine.toLowerCase();
+
+  // Find all matched stock items in the line to determine if we split or parse as single
+  const matchedItemIds = new Set();
+  stockItems.forEach(item => {
+    const itemName = item.name.toLowerCase();
+    // Check if the item name or its singular form is in the line
+    if (lowerLine.includes(itemName) || 
+        (itemName.endsWith('s') && lowerLine.includes(itemName.slice(0, -1))) ||
+        (itemName.endsWith('es') && lowerLine.includes(itemName.slice(0, -2)))) {
+      matchedItemIds.add(item.id);
+    }
+  });
+
+  // If multiple stock items are matched, or if there's an 'and' connecting distinct items,
+  // we split by clauses.
+  if (matchedItemIds.size > 1) {
+    const segments = cleanedLine.split(/\band\b|[,;]|\balso\b/gi).map(s => s.trim()).filter(s => s.length > 0);
+    const parsedSegments = [];
+    segments.forEach(seg => {
+      const parsed = parseSingleSegment(seg, stockItems);
+      if (parsed) {
+        parsedSegments.push(parsed);
+      }
+    });
+    return parsedSegments;
+  } else {
+    const parsed = parseSingleSegment(cleanedLine, stockItems);
+    return parsed ? [parsed] : [];
+  }
+}
+
+function parseSingleSegment(segment, stockItems) {
+  // 1. Extract Quantity & Unit
+  const qtyUnitRegex = /(\d+(?:\.\d+)?)\s*(kg|kg\.|kgs|kilo|kilos|litre|litres|ltr|ltrs|pcs|pieces|pieces\.|units|unit|pkts|pkt|packs|pack)\b/i;
+  const qtyUnitMatch = segment.match(qtyUnitRegex);
+  
+  let quantity = null;
+  let unit = "";
+  let qtyPhrase = "";
+  
+  if (qtyUnitMatch) {
+    quantity = parseFloat(qtyUnitMatch[1]);
+    unit = qtyUnitMatch[2].trim().toLowerCase();
+    qtyPhrase = qtyUnitMatch[0];
+  } else {
+    // Look for standalone numbers that aren't rates
+    const numbers = [...segment.matchAll(/\b(\d+(?:\.\d+)?)\b/g)];
+    for (const match of numbers) {
+      const num = parseFloat(match[1]);
+      const index = match.index;
+      
+      const beforeStr = segment.slice(Math.max(0, index - 15), index).toLowerCase();
+      // If it's preceded by rate characters, skip
+      if (/\b(at|for|@|rs\.?|rupees?)\s*$/i.test(beforeStr)) {
+        continue;
+      }
+      
+      const afterStr = segment.slice(index + match[1].length, index + match[1].length + 15).toLowerCase();
+      // If it's followed by rate units or indicators, skip
+      if (/^\s*(?:rs|rupees?|per|\/)/i.test(afterStr)) {
+        continue;
+      }
+      
+      quantity = num;
+      qtyPhrase = match[0];
+      break;
+    }
+  }
+
+  // 2. Extract Rate / Price
+  let rate = null;
+  let totalPrice = null;
+  let ratePhrase = "";
+  
+  // Rate suffix
+  const rateSuffixRegex = /(\d+(?:\.\d+)?)\s*(?:rs\.?|rupees?)?\s*(?:\/|per)\s*(?:kg|kilo|litre|ltr|pcs|piece|unit|pkt|pack)\b/i;
+  const rateSuffixMatch = segment.match(rateSuffixRegex);
+  
+  if (rateSuffixMatch) {
+    rate = parseFloat(rateSuffixMatch[1]);
+    ratePhrase = rateSuffixMatch[0];
+  } else {
+    // Total price suffix (e.g. "= 420", "total 1400", "for 1400 total")
+    const totalRegex = /(?:=|\btotal\b|\bsum\b)\s*(\d+(?:\.\d+)?)\b/i;
+    const totalMatch = segment.match(totalRegex);
+    
+    // Fallback total price suffix check (like "1400 total")
+    const totalRegex2 = /(\d+(?:\.\d+)?)\s*(?:total|in total|sum)\b/i;
+    const totalMatch2 = segment.match(totalRegex2);
+
+    let startIdx = -1;
+    let endIdx = -1;
+
+    if (totalMatch) {
+      totalPrice = parseFloat(totalMatch[1]);
+      startIdx = totalMatch.index;
+      endIdx = totalMatch.index + totalMatch[0].length;
+    } else if (totalMatch2) {
+      totalPrice = parseFloat(totalMatch2[1]);
+      startIdx = totalMatch2.index;
+      endIdx = totalMatch2.index + totalMatch2[0].length;
+    }
+    
+    // Rate prefix (including @, x, *, at, for, rs)
+    const ratePrefixRegex = /(?:at|for|@|rs\.?|rupees?|x|\*)\s*(\d+(?:\.\d+)?)\b/i;
+    const ratePrefixMatch = segment.match(ratePrefixRegex);
+    if (ratePrefixMatch) {
+      const numVal = parseFloat(ratePrefixMatch[1]);
+      if (numVal !== quantity || ratePrefixMatch[0] !== qtyPhrase) {
+        // If we have total price matched, this "for [num]" is part of the total price phrase
+        if (totalPrice !== null) {
+          rate = null;
+        } else {
+          rate = numVal;
+        }
+        
+        const pIdx = ratePrefixMatch.index;
+        const pEnd = ratePrefixMatch.index + ratePrefixMatch[0].length;
+        if (startIdx === -1) {
+          startIdx = pIdx;
+          endIdx = pEnd;
+        } else {
+          if (pIdx < startIdx) startIdx = pIdx;
+          if (pEnd > endIdx) endIdx = pEnd;
+        }
+      }
+    }
+
+    if (startIdx !== -1) {
+      ratePhrase = segment.slice(startIdx, endIdx);
+    }
+  }
+
+  // Standardize units
+  if (unit) {
+    if (unit.startsWith("kg") || unit.startsWith("kilo")) unit = "kg";
+    else if (unit.startsWith("lit") || unit.startsWith("ltr")) unit = "litre";
+    else if (unit.startsWith("pc") || unit.startsWith("unit")) unit = "pieces";
+    else unit = "kg";
+  } else {
+    unit = "kg";
+  }
+
+  // 3. Extract Item Name
+  let cleaned = segment;
+  if (qtyPhrase) cleaned = cleaned.replace(qtyPhrase, "");
+  if (ratePhrase) cleaned = cleaned.replace(ratePhrase, "");
+  
+  cleaned = cleaned
+    .replace(/\b(bought|buy|we|delivered|received|of|and|also|rs\.?|rupees?|per|for|at|total|in|sum|i)\b/gi, "")
+    .replace(/[=@\/,;\.\#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+    
+  if (!cleaned) return null;
+
+  // Fuzzy match item name
+  const matchedItemId = fuzzyMatchStockItem(cleaned, stockItems);
+
+  if (quantity === null) quantity = 1;
+
+  let calculatedRate = 0;
+  let calculatedTotal = 0;
+  
+  if (rate !== null) {
+    calculatedRate = rate;
+    calculatedTotal = quantity * rate;
+  } else if (totalPrice !== null) {
+    calculatedTotal = totalPrice;
+    calculatedRate = quantity > 0 ? (totalPrice / quantity) : 0;
+  } else {
+    calculatedRate = 0;
+    calculatedTotal = 0;
+  }
+
+  return {
+    rawName: cleaned,
+    matchedItemId: matchedItemId || "",
+    quantity: quantity,
+    unit: unit,
+    unitPrice: calculatedRate,
+    lineTotal: calculatedTotal
+  };
 }
 
 function handleParseText() {
