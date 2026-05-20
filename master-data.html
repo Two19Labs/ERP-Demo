@@ -10,38 +10,57 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="app-shell">
-  <header class="top-nav-bar">
-    <div class="top-nav-container">
-      <div class="brand-section">
-        <span class="brand-emoji">📦</span>
-        <span class="brand-title">Stock Control</span>
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">Restaurant Stock Control</p>
+      <h1>Stock items and suppliers for one restaurant</h1>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a class="nav-item nav-link" href="dashboard.html">
+        <span>Stock Dashboard</span>
+      </a>
+      <a class="nav-item nav-item-active nav-link" href="master-data.html">
+        <span>Stock Setup</span>
+      </a>
+      <a class="nav-item nav-link" href="bill-capture.html">
+        <span>Bill Capture</span>
+      </a>
+      <a class="nav-item nav-link" href="purchase-register.html">
+        <span>Purchase Register</span>
+      </a>
+      <a class="nav-item nav-link" href="stock-ledger.html">
+        <span>Stock Ledger</span>
+      </a>
+      <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
+        <span>Alerts</span>
+        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-note">
+      <p class="note-label">Current goal</p>
+      <p id="sidebarScope">Owner maintains stock items and approved suppliers before staff bills are accepted.</p>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Phase 2</p>
+        <h2>Stock Setup</h2>
       </div>
-      <nav class="nav-links" aria-label="Primary">
-        <a class="nav-item nav-link" href="dashboard.html">Stock Dashboard</a>
-        <a class="nav-item nav-item-active nav-link" href="master-data.html">Stock Setup</a>
-        <a class="nav-item nav-link" href="bill-capture.html">Bill Capture</a>
-        <a class="nav-item nav-link" href="purchase-register.html">Purchase Register</a>
-        <a class="nav-item nav-link" href="stock-ledger.html">Stock Ledger</a>
-        <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
-          <span>Alerts</span>
-          <span class="nav-badge hidden" id="alertsCountBadge">0</span>
-        </a>
-      </nav>
-      <div class="nav-user-section">
+
+      <div class="topbar-actions">
         <div class="user-meta">
           <span id="userEmail"></span>
           <span id="userRole" class="role-pill"></span>
         </div>
         <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <main class="content-main">
-    <div class="page-title-block">
-      <p class="eyebrow">Phase 2</p>
-      <h2>Stock Setup</h2>
-    </div>
+    <main class="content-main">
       <div id="onboardingGuide" class="onboarding-guide animate-fade">
         <h4>
           <span>Owner's Quick Start Guide</span>
@@ -262,6 +281,7 @@
         </div>
       </section>
     </main>
+  </div>
 
   <div id="globalDeleteModal" class="global-modal-overlay">
     <div class="global-modal-content">
