@@ -96,6 +96,14 @@ function wireDashboardEvents() {
   // Wire detail tabs
   document.getElementById("detailTabConfig")?.addEventListener("click", () => switchDetailTab("config"));
   document.getElementById("detailTabHistory")?.addEventListener("click", () => switchDetailTab("history"));
+
+  // Wire delete buttons
+  document.getElementById("stockItemDeleteBtn")?.addEventListener("click", () => showDeleteModal("stock_item", appState.selectedRecordId));
+  document.getElementById("vendorDeleteBtn")?.addEventListener("click", () => showDeleteModal("vendor", appState.selectedRecordId));
+
+  // Wire global delete modal
+  document.getElementById("cancelDeleteBtn")?.addEventListener("click", hideDeleteModal);
+  document.getElementById("confirmDeleteBtn")?.addEventListener("click", executeGlobalDelete);
 }
 
 function showForm(tab) {
@@ -415,6 +423,11 @@ function populateStockItemForm(id) {
   document.getElementById("stockItemLowStockThreshold").value = record.low_stock_threshold;
   document.getElementById("stockItemIsActive").checked = record.is_active;
   document.getElementById("stockItemNotes").value = record.notes || "";
+  
+  const isOwner = appState.profile?.role_code === "owner";
+  if (isOwner) {
+    document.getElementById("stockItemDeleteBtn")?.classList.remove("hidden");
+  }
 }
 
 function populateVendorForm(id) {
@@ -427,12 +440,18 @@ function populateVendorForm(id) {
   document.getElementById("vendorCategorySupplied").value = record.category_supplied || "";
   document.getElementById("vendorNotes").value = record.notes || "";
   document.getElementById("vendorIsActive").checked = record.is_active;
+  
+  const isOwner = appState.profile?.role_code === "owner";
+  if (isOwner) {
+    document.getElementById("vendorDeleteBtn")?.classList.remove("hidden");
+  }
 }
 
 function resetStockItemForm() {
   document.getElementById("stockItemForm").reset();
   document.getElementById("stockItemId").value = "";
   document.getElementById("stockItemIsActive").checked = true;
+  document.getElementById("stockItemDeleteBtn")?.classList.add("hidden");
   appState.selectedRecordId = null;
   document.getElementById("detailTabs")?.classList.add("hidden");
   document.getElementById("historyContainer")?.classList.add("hidden");
@@ -444,6 +463,7 @@ function resetVendorForm() {
   document.getElementById("vendorForm").reset();
   document.getElementById("vendorId").value = "";
   document.getElementById("vendorIsActive").checked = true;
+  document.getElementById("vendorDeleteBtn")?.classList.add("hidden");
   appState.selectedRecordId = null;
   document.getElementById("detailTabs")?.classList.add("hidden");
   document.getElementById("historyContainer")?.classList.add("hidden");
@@ -982,3 +1002,44 @@ async function loadActiveAlertsBadge() {
   }
 }
 
+// Global Delete Modal Logic
+let deleteTarget = null; // { type: "stock_item" | "vendor", id: string }
+
+function showDeleteModal(type, id) {
+  deleteTarget = { type, id };
+  const modal = document.getElementById("globalDeleteModal");
+  const title = document.getElementById("deleteModalTitle");
+  const text = document.getElementById("deleteModalText");
+  
+  if (type === "stock_item") {
+    title.textContent = "Delete Stock Item";
+    text.textContent = "Are you sure you want to delete this stock item? All linked bills and stock movements will also be deleted permanently.";
+  } else if (type === "vendor") {
+    title.textContent = "Delete Vendor";
+    text.textContent = "Are you sure you want to delete this vendor? All bills associated with this vendor will also be deleted permanently.";
+  }
+  
+  modal.classList.add("active");
+}
+
+function hideDeleteModal() {
+  deleteTarget = null;
+  document.getElementById("globalDeleteModal").classList.remove("active");
+}
+
+async function executeGlobalDelete() {
+  if (!deleteTarget) return;
+  const { type, id } = deleteTarget;
+  
+  const table = type === "stock_item" ? "stock_items" : "vendors";
+  const { error } = await supabaseClient.from(table).delete().eq("id", id);
+  
+  if (error) {
+    alert("Delete failed: " + error.message);
+  } else {
+    if (type === "stock_item") resetStockItemForm();
+    else resetVendorForm();
+    await loadMasterData();
+  }
+  hideDeleteModal();
+}

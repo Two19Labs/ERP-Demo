@@ -86,6 +86,10 @@ function wireRegisterEvents() {
       document.activeElement.blur();
     }
   });
+
+  // Wire global delete modal
+  document.getElementById("cancelDeleteBtn")?.addEventListener("click", hideDeleteModal);
+  document.getElementById("confirmDeleteBtn")?.addEventListener("click", executeGlobalDelete);
 }
 
 async function setupRegister(user) {
@@ -591,7 +595,10 @@ function renderOverviewGrid() {
             <strong style="font-size: 1.05rem; color: var(--ink);">₹${bill.total.toFixed(2)}</strong>
             ${fileLink}
           </div>
-          <span class="record-pill ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">${statusText}</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+            <span class="record-pill ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">${statusText}</span>
+            ${appState.profile?.role_code === 'owner' ? `<button class="btn btn-danger" style="font-size: 0.75rem; padding: 4px 10px; height: auto;" onclick="window.showBillDeleteModal('${bill.id}', '${bill.vendors?.name || 'Unknown'}', '${billRef}')">Delete</button>` : ''}
+          </div>
         </div>
       </article>
     `;
@@ -647,3 +654,35 @@ async function loadActiveAlertsBadge() {
   }
 }
 
+// ---- Global Delete Modal (Bills) ----
+let deleteBillTarget = null; // { id: string }
+
+window.showBillDeleteModal = function(billId, vendorName, billRef) {
+  deleteBillTarget = { id: billId };
+  const modal = document.getElementById("globalDeleteModal");
+  const title = document.getElementById("deleteModalTitle");
+  const text = document.getElementById("deleteModalText");
+
+  title.textContent = "Delete Bill";
+  text.textContent = `Are you sure you want to delete the bill ${billRef} from ${vendorName}? All stock movements created from this bill will also be deleted permanently.`;
+  modal.classList.add("active");
+};
+
+function hideDeleteModal() {
+  deleteBillTarget = null;
+  document.getElementById("globalDeleteModal")?.classList.remove("active");
+}
+
+async function executeGlobalDelete() {
+  if (!deleteBillTarget) return;
+  const { id } = deleteBillTarget;
+
+  const { error } = await supabaseClient.from("purchase_bills").delete().eq("id", id);
+
+  if (error) {
+    alert("Delete failed: " + error.message);
+  } else {
+    await loadRegisterData();
+  }
+  hideDeleteModal();
+}

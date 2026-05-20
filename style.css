@@ -1394,8 +1394,81 @@ body {
   background: var(--line);
 }
 
+/* =========================================
+   Phase 9 - Global Confirmation Modal & Danger Button
+   ========================================= */
 
+.btn-danger {
+  background-color: transparent;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+}
 
+.btn-danger:hover {
+  background-color: #d32f2f;
+  color: white;
+  transform: translateY(-1px);
+}
 
+.global-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
 
+.global-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
 
+.global-modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: var(--shadow-deep);
+  transform: translateY(15px);
+  transition: transform 0.25s ease;
+  text-align: center;
+}
+
+.global-modal-overlay.active .global-modal-content {
+  transform: translateY(0);
+}
+
+.global-modal-icon {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+}
+
+.global-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 10px 0;
+}
+
+.global-modal-text {
+  font-size: 0.9rem;
+  color: var(--clay);
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+.global-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
