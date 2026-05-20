@@ -700,19 +700,20 @@ Rules:
 2. Select the vendor ID by mapping the mention in the text to the nearest available vendor.
 3. Keep units standardized ('kg', 'litre', or 'pieces').`;
 
-  const response = await fetch("https://api-inference.huggingface.co/models/Qwen/Qwen2.5-7B-Instruct", {
+  const response = await fetch("https://api-inference.huggingface.co/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
+      "Authorization": `Bearer ${apiKey.trim()}`
     },
     body: JSON.stringify({
-      inputs: `<|im_start|>system\n${systemPrompt}<|im_end|>\n<|im_start|>user\nExtract details from:\n${text}<|im_end|>\n<|im_start|>assistant\n`,
-      parameters: {
-        max_new_tokens: 1024,
-        temperature: 0.1,
-        return_full_text: false
-      }
+      model: "Qwen/Qwen2.5-7B-Instruct",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Extract details from:\n${text}` }
+      ],
+      max_tokens: 1024,
+      temperature: 0.1
     })
   });
 
@@ -722,12 +723,7 @@ Rules:
   }
 
   const resData = await response.json();
-  let generatedText = "";
-  if (Array.isArray(resData)) {
-    generatedText = resData[0].generated_text;
-  } else {
-    generatedText = resData.generated_text;
-  }
+  let generatedText = resData.choices[0].message.content;
 
   generatedText = generatedText.trim();
   // Strip code block wrappers if any
