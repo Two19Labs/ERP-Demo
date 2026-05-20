@@ -228,17 +228,17 @@ Allow the owner or staff to enter supplier bills manually before automation.
 
 ## Build
 
-- [ ] Build Purchase Register screen.
-- [ ] Build Add Bill form.
-- [ ] Select vendor.
-- [ ] Add bill date and bill number.
-- [ ] Add multiple line items.
-- [ ] Select stock item, quantity, unit, unit price.
-- [ ] Auto-calculate line totals.
-- [ ] Auto-calculate bill total.
-- [ ] Save as draft.
-- [ ] Approve bill.
-- [ ] On approval, create stock movements.
+- [x] Build Purchase Register screen.
+- [x] Build Add Bill form.
+- [x] Select vendor.
+- [x] Add bill date and bill number.
+- [x] Add multiple line items.
+- [x] Select stock item, quantity, unit, unit price.
+- [x] Auto-calculate line totals.
+- [x] Auto-calculate bill total.
+- [x] Save as draft.
+- [x] Approve bill.
+- [x] On approval, create stock movements.
 
 ## Bill Statuses
 

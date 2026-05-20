@@ -135,35 +135,105 @@
         <div id="setupAlert" class="setup-alert hidden"></div>
 
         <div class="planner-grid">
-          <section class="panel panel-soft">
-            <div class="panel-header panel-header-spread">
-              <div>
-                <p class="eyebrow">Stock master</p>
-              <h3>Available stock items</h3>
-              </div>
-              <button id="copyYesterdayBtn" class="btn btn-outline" type="button">Use previous bill</button>
-            </div>
-            <div id="dishPicker" class="dish-picker">
-              <p class="summary-empty">Loading stock items.</p>
-            </div>
-          </section>
-
+          <!-- Left Column: Bill & Item Entry -->
           <section class="panel panel-soft">
             <div class="panel-header">
               <div>
-                <p class="eyebrow">Draft bill</p>
-                <h3 id="selectedOutletTitle">Purchase lines</h3>
+                <p class="eyebrow">Capture bill items</p>
+                <h3>Bill & line item entry</h3>
+              </div>
+            </div>
+            
+            <form id="purchaseEntryForm" class="details-form" onsubmit="return false;">
+              <div class="form-group">
+                <label for="billVendorId">Vendor <span class="required">*</span></label>
+                <select id="billVendorId" class="select-control" required>
+                  <option value="">Select a vendor...</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="billDate">Bill Date <span class="required">*</span></label>
+                  <input id="billDate" class="form-control" type="date" required>
+                </div>
+                <div class="form-group">
+                  <label for="billNumber">Bill Number</label>
+                  <input id="billNumber" class="form-control" type="text" placeholder="e.g. INV-1234">
+                </div>
+              </div>
+
+              <hr style="border: 0; border-top: 1px solid var(--line); margin: 20px 0;">
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="billStockItemId" style="margin-bottom: 0;">Stock Item <span class="required">*</span></label>
+                  <button id="addStockItemBtn" class="btn btn-link btn-small" type="button" style="padding: 0; font-size: 0.8rem; height: auto;">+ Add New Stock Item</button>
+                </div>
+                <select id="billStockItemId" class="select-control">
+                  <option value="">Select a stock item...</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="billItemQuantity">Quantity <span class="required">*</span></label>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <input id="billItemQuantity" class="form-control" type="number" step="0.001" min="0.001" placeholder="0.000">
+                    <span id="billItemUnitDisplay" style="font-size: 0.85rem; color: var(--clay); min-width: 40px;">unit</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="billItemUnitPrice">Unit Price (₹) <span class="required">*</span></label>
+                  <input id="billItemUnitPrice" class="form-control" type="number" step="0.01" min="0.00" placeholder="0.00">
+                </div>
+              </div>
+
+              <button id="addLineItemBtn" class="btn btn-outline" type="button" style="width: 100%; justify-content: center; margin-top: 10px;">Add Line Item</button>
+            </form>
+          </section>
+
+          <!-- Right Column: Draft Receipt Preview -->
+          <section class="panel panel-soft">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Draft receipt</p>
+                <h3 id="selectedOutletTitle">Purchase bill preview</h3>
               </div>
             </div>
 
-            <div class="selection-actions">
-              <button id="saveMenuBtn" class="btn btn-primary" type="button">Approve bill</button>
-              <button id="clearMenuBtn" class="btn btn-outline" type="button">Clear</button>
+            <div class="selection-actions" style="margin-bottom: 15px;">
+              <button id="approveBillBtn" class="btn btn-primary" type="button" disabled>Approve & Save Bill</button>
+              <button id="clearBillBtn" class="btn btn-outline" type="button">Clear</button>
             </div>
 
             <div id="saveFeedback" class="inline-feedback hidden"></div>
-            <div id="selectedMenuList" class="selected-stack">
-              <p class="summary-empty">No bill items selected yet.</p>
+            
+            <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+              <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+                    <th style="padding: 8px 4px;">Item</th>
+                    <th style="padding: 8px 4px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 4px;">Unit</th>
+                    <th style="padding: 8px 4px; text-align: right;">Rate (₹)</th>
+                    <th style="padding: 8px 4px; text-align: right;">Total (₹)</th>
+                    <th style="padding: 8px 4px; text-align: center;"></th>
+                  </tr>
+                </thead>
+                <tbody id="billItemsBody">
+                  <tr>
+                    <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">No bill items added yet.</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr style="border-top: 2px solid var(--line); font-weight: bold;">
+                    <td colspan="4" style="text-align: right; padding: 10px 5px;">Total:</td>
+                    <td id="billTotalDisplay" style="text-align: right; padding: 10px 5px; color: var(--emerald);">₹0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </section>
         </div>
@@ -196,6 +266,58 @@
         </section>
       </section>
     </main>
+  </div>
+
+  <!-- Inline Modal for Quick Adding Stock Item -->
+  <div id="quickStockModal" class="modal-overlay hidden">
+    <div class="modal-content animate-fade">
+      <div class="modal-header">
+        <h4>Create New Stock Item</h4>
+        <button id="closeQuickStockModal" class="modal-close-btn" type="button" title="Close">&times;</button>
+      </div>
+      <form id="quickStockForm" class="details-form" onsubmit="return false;">
+        <div class="form-group">
+          <label for="quickStockName">Item Name <span class="required">*</span></label>
+          <input id="quickStockName" class="form-control" type="text" placeholder="e.g. Garlic" required>
+        </div>
+        <div class="form-group">
+          <label for="quickStockCategory">Category <span class="required">*</span></label>
+          <select id="quickStockCategory" class="select-control" required>
+            <option value="">Select category...</option>
+            <option value="Vegetables">Vegetables</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Meat / Protein">Meat / Protein</option>
+            <option value="Dry Goods">Dry Goods</option>
+            <option value="Packaging">Packaging</option>
+            <option value="Cleaning Supplies">Cleaning Supplies</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="quickStockUnit">Default Unit <span class="required">*</span></label>
+            <select id="quickStockUnit" class="select-control" required>
+              <option value="kg">kg</option>
+              <option value="litre">litre</option>
+              <option value="pieces">pieces</option>
+              <option value="box">box</option>
+              <option value="pack">pack</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="quickStockThreshold">Low stock threshold</label>
+            <input id="quickStockThreshold" class="form-control" type="number" step="0.001" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="quickStockNotes">Notes</label>
+          <textarea id="quickStockNotes" class="form-control text-area-control" rows="2" placeholder="Storage instructions or description"></textarea>
+        </div>
+        <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 15px;">
+          <button class="btn btn-primary" type="submit" style="flex: 1;">Create Item</button>
+          <button id="cancelQuickStockModal" class="btn btn-outline" type="button" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

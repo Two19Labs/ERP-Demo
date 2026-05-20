@@ -3,17 +3,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_H5hfJElwUFl-yJR35qtc2w_Fz2MfZRU";
 
 const appState = {
   profile: null,
-  accessibleOutlets: [],
-  selectedOutletId: null,
   selectedDate: "",
   setupError: "",
-  menuId: null,
-  selectedDishIds: [],
+  currentBillItems: [],
   records: {
-    dishes: [],
-    currentMenuItems: [],
-    yesterdayMenuItems: [],
-    overviewMenus: []
+    stock_items: [],
+    vendors: [],
+    purchase_bills: []
   }
 };
 
@@ -117,24 +113,24 @@ function wireDashboardEvents() {
 
   document.getElementById("menuDate")?.addEventListener("change", async (event) => {
     appState.selectedDate = event.target.value;
+    const billDateInput = document.getElementById("billDate");
+    if (billDateInput) {
+      billDateInput.value = appState.selectedDate;
+    }
     clearFeedback();
-    await loadPlannerData();
+    await loadDashboardData();
   });
-
-  document.getElementById("outletSelector")?.addEventListener("change", async (event) => {
-    appState.selectedOutletId = event.target.value;
-    clearFeedback();
-    renderAccessCopy();
-    await loadPlannerData();
-  });
-
-  document.getElementById("copyYesterdayBtn")?.addEventListener("click", copyYesterdayMenu);
-  document.getElementById("saveMenuBtn")?.addEventListener("click", saveMenu);
-  document.getElementById("clearMenuBtn")?.addEventListener("click", clearSelectedMenu);
 
   document.getElementById("closeOnboardingBtn")?.addEventListener("click", () => {
     document.getElementById("onboardingGuide").classList.add("hidden");
   });
+
+  document.getElementById("addLineItemBtn")?.addEventListener("click", addLineItem);
+  document.getElementById("approveBillBtn")?.addEventListener("click", saveApprovedBill);
+  document.getElementById("clearBillBtn")?.addEventListener("click", clearBillForm);
+
+  wireStockItemDropdownChange();
+  wireQuickStockModal();
 }
 
 async function setupDashboard(user) {
@@ -148,20 +144,20 @@ async function setupDashboard(user) {
   }
 
   appState.profile = profile;
-  appState.accessibleOutlets = await fetchAccessibleOutlets();
-  appState.selectedOutletId =
-    profile.role_code === "hq"
-      ? (appState.accessibleOutlets[0] && appState.accessibleOutlets[0].id) || null
-      : profile.outlet_id;
-  appState.selectedDate = getTomorrowDate();
+  appState.selectedDate = toIsoDate(new Date());
 
   const dateInput = document.getElementById("menuDate");
   if (dateInput) {
     dateInput.value = appState.selectedDate;
   }
 
+  const billDateInput = document.getElementById("billDate");
+  if (billDateInput) {
+    billDateInput.value = appState.selectedDate;
+  }
+
   renderAccessCopy();
-  await loadPlannerData();
+  await loadDashboardData();
 }
 
 async function fetchCurrentUserProfile(userId) {
@@ -179,28 +175,11 @@ async function fetchCurrentUserProfile(userId) {
   return data;
 }
 
-async function fetchAccessibleOutlets() {
-  const { data, error } = await supabaseClient
-    .from("outlets")
-    .select("id, code, name, city, state_region")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching outlets:", error);
-    return [];
-  }
-
-  return data || [];
-}
-
 function renderMissingProfileState() {
   document.getElementById("userRole").textContent = "Needs setup";
   document.getElementById("welcomeTitle").textContent = "Your auth user exists, but the app profile is missing";
   document.getElementById("welcomeText").textContent =
     "Add a matching row in public.users for this auth user, then reload the page.";
-  document.getElementById("dishPicker").innerHTML =
-    '<p class="summary-empty">No matching row found in public.users.</p>';
 }
 
 function renderAccessCopy() {
@@ -209,198 +188,384 @@ function renderAccessCopy() {
     return;
   }
 
-  const isHq = profile.role_code === "hq";
-  const roleLabel = isHq ? "Owner" : "Staff";
-  const selectorWrap = document.getElementById("outletSelectorWrap");
-  const selector = document.getElementById("outletSelector");
-  const badge = document.getElementById("managerOutletBadge");
-  const currentOutlet = getCurrentOutlet();
+  const isOwner = profile.role_code === "owner";
+  const roleLabel = isOwner ? "Owner" : "Staff";
 
   document.body.classList.add(`role-${profile.role_code}`);
   document.getElementById("userRole").textContent = roleLabel;
-  document.getElementById("workspaceBadge").textContent = isHq ? "Owner review mode" : "Staff entry mode";
+  document.getElementById("workspaceBadge").textContent = isOwner ? "Owner review mode" : "Staff entry mode";
 
-  if (isHq) {
-    selectorWrap.classList.add("hidden");
-    badge.classList.add("hidden");
-    selector.innerHTML = "";
-
-    appState.accessibleOutlets.forEach((outlet) => {
-      const option = document.createElement("option");
-      option.value = outlet.id;
-      option.textContent = `${outlet.name} (${outlet.city})`;
-      selector.appendChild(option);
-    });
-
-    if (appState.selectedOutletId) {
-      selector.value = appState.selectedOutletId;
-    }
-
+  if (isOwner) {
     document.getElementById("welcomeTitle").textContent = "Review supplier bills before stock changes";
     document.getElementById("welcomeText").textContent =
       "Use this dashboard to see purchase drafts, recent stock entries, and bills that need owner attention.";
-    document.getElementById("sidebarScope").textContent =
-      "Owner reviews supplier bills, catches unusual rates, and approves entries before they affect stock.";
   } else {
-    selectorWrap.classList.add("hidden");
-    badge.classList.remove("hidden");
-    badge.textContent = profile.full_name || "Staff access";
     document.getElementById("welcomeTitle").textContent = "Submit purchase bills for owner review";
     document.getElementById("welcomeText").textContent =
       "Capture supplier bill lines clearly so the owner can approve real stock movement.";
-    document.getElementById("sidebarScope").textContent =
-      "Staff can prepare bill drafts. Owner approval will become the gate before stock is updated.";
   }
-
-  document.getElementById("selectedOutletTitle").textContent = currentOutlet
-    ? "Purchase lines"
-    : "Purchase lines";
 }
 
-async function loadPlannerData() {
-  const results = await Promise.all([
-    fetchDishes(),
-    fetchCurrentMenu(),
-    fetchYesterdayMenu(),
-    fetchOverviewMenus()
-  ]);
+async function loadDashboardData() {
+  // 1. Fetch active stock items
+  const { data: stockItems, error: err1 } = await supabaseClient
+    .from("stock_items")
+    .select("*")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
 
-  appState.records.dishes = results[0].data;
-  appState.records.currentMenuItems = results[1].items;
-  appState.records.yesterdayMenuItems = results[2].items;
-  appState.records.overviewMenus = results[3].data;
-  appState.menuId = results[1].menuId;
-  appState.selectedDishIds = results[1].items.map((item) => item.dish_id);
-  appState.setupError = results.find((result) => result.error)?.error?.message || "";
+  // 2. Fetch active vendors
+  const { data: vendors, error: err2 } = await supabaseClient
+    .from("vendors")
+    .select("*")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  // 3. Fetch purchase bills
+  const { data: bills, error: err3 } = await supabaseClient
+    .from("purchase_bills")
+    .select(`
+      id,
+      bill_number,
+      bill_date,
+      total,
+      status,
+      vendors (name)
+    `)
+    .eq("bill_date", appState.selectedDate)
+    .order("created_at", { ascending: false });
+
+  appState.records.stock_items = stockItems || [];
+  appState.records.vendors = vendors || [];
+  appState.records.purchase_bills = bills || [];
+  appState.setupError = (err1 || err2 || err3)?.message || "";
 
   updateSummaryCounts();
   renderSetupAlert();
-  renderDishPicker();
-  renderSelectedMenu();
+  populateVendorDropdown();
+  populateStockItemDropdown();
+  renderBillItems();
   renderOverviewGrid();
 }
 
-async function fetchDishes() {
-  const { data, error } = await supabaseClient
-    .from("dishes")
-    .select("id, name, category, service_order, is_jain, is_active")
-    .eq("is_active", true)
-    .order("service_order", { ascending: true })
-    .order("name", { ascending: true });
+function populateVendorDropdown() {
+  const select = document.getElementById("billVendorId");
+  if (!select) return;
 
-  if (error) {
-    console.error("Error fetching stock items:", error);
-  }
+  const prevVal = select.value;
+  select.innerHTML = '<option value="">Select a vendor...</option>';
 
-  return { data: data || [], error };
+  appState.records.vendors.forEach((vendor) => {
+    const opt = document.createElement("option");
+    opt.value = vendor.id;
+    opt.textContent = vendor.name;
+    select.appendChild(opt);
+  });
+
+  if (prevVal) select.value = prevVal;
 }
 
-async function fetchCurrentMenu() {
-  if (!appState.selectedOutletId || !appState.selectedDate) {
-    return { menuId: null, items: [], error: null };
-  }
+function populateStockItemDropdown() {
+  const select = document.getElementById("billStockItemId");
+  if (!select) return;
 
-  const { data, error } = await supabaseClient
-    .from("daily_menus")
-    .select(`
-      id,
-      menu_date,
-      daily_menu_items (
-        dish_id,
-        display_order,
-        dishes (
-          id,
-          name,
-          category,
-          service_order,
-          is_jain
-        )
-      )
-    `)
-    .eq("outlet_id", appState.selectedOutletId)
-    .eq("menu_date", appState.selectedDate)
-    .maybeSingle();
+  const prevVal = select.value;
+  select.innerHTML = '<option value="">Select a stock item...</option>';
 
-  if (error) {
-    console.error("Error fetching current purchase draft:", error);
-    return { menuId: null, items: [], error };
-  }
+  appState.records.stock_items.forEach((item) => {
+    const opt = document.createElement("option");
+    opt.value = item.id;
+    opt.textContent = `${item.name} (${item.category})`;
+    select.appendChild(opt);
+  });
 
-  const items = normalizeMenuItems(data?.daily_menu_items || []);
-  return { menuId: data?.id || null, items, error: null };
+  if (prevVal) select.value = prevVal;
 }
 
-async function fetchYesterdayMenu() {
-  if (!appState.selectedOutletId || !appState.selectedDate) {
-    return { items: [], error: null };
-  }
+function wireStockItemDropdownChange() {
+  const select = document.getElementById("billStockItemId");
+  const display = document.getElementById("billItemUnitDisplay");
+  if (!select || !display) return;
 
-  const previousDate = shiftDate(appState.selectedDate, -1);
-  const { data, error } = await supabaseClient
-    .from("daily_menus")
-    .select(`
-      id,
-      daily_menu_items (
-        dish_id,
-        display_order,
-        dishes (
-          id,
-          name,
-          category,
-          service_order,
-          is_jain
-        )
-      )
-    `)
-    .eq("outlet_id", appState.selectedOutletId)
-    .eq("menu_date", previousDate)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Error fetching previous purchase draft:", error);
-    return { items: [], error };
-  }
-
-  return { items: normalizeMenuItems(data?.daily_menu_items || []), error: null };
+  select.addEventListener("change", () => {
+    const itemId = select.value;
+    const item = appState.records.stock_items.find((x) => x.id === itemId);
+    display.textContent = item ? item.default_unit : "unit";
+  });
 }
 
-async function fetchOverviewMenus() {
-  if (!appState.selectedDate) {
-    return { data: [], error: null };
-  }
+function wireQuickStockModal() {
+  const modal = document.getElementById("quickStockModal");
+  const openBtn = document.getElementById("addStockItemBtn");
+  const closeBtn = document.getElementById("closeQuickStockModal");
+  const cancelBtn = document.getElementById("cancelQuickStockModal");
+  const form = document.getElementById("quickStockForm");
 
-  const { data, error } = await supabaseClient
-    .from("public_daily_menu_view")
-    .select("outlet_id, outlet_code, outlet_name, city, menu_date, dish_count, dishes_json")
-    .eq("menu_date", appState.selectedDate)
-    .order("outlet_name", { ascending: true });
+  if (!modal) return;
 
-  if (error) {
-    console.error("Error fetching purchase overview:", error);
-    return { data: [], error };
-  }
+  const openModal = () => {
+    form.reset();
+    modal.classList.remove("hidden");
+  };
+  const closeModal = () => {
+    modal.classList.add("hidden");
+  };
 
-  return { data: data || [], error: null };
+  openBtn?.addEventListener("click", openModal);
+  closeBtn?.addEventListener("click", closeModal);
+  cancelBtn?.addEventListener("click", closeModal);
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("quickStockName").value.trim();
+    const category = document.getElementById("quickStockCategory").value;
+    const default_unit = document.getElementById("quickStockUnit").value;
+    const low_stock_threshold = Number(document.getElementById("quickStockThreshold").value || 0);
+    const notes = document.getElementById("quickStockNotes").value.trim() || null;
+
+    if (!name || !category || !default_unit) {
+      alert("Please fill out all required fields.");
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from("stock_items")
+      .insert({
+        name,
+        category,
+        default_unit,
+        low_stock_threshold,
+        notes
+      })
+      .select()
+      .single();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    closeModal();
+
+    // Reload items
+    const { data: updatedItems } = await supabaseClient
+      .from("stock_items")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    appState.records.stock_items = updatedItems || [];
+    populateStockItemDropdown();
+
+    // Automatically select the new item
+    document.getElementById("billStockItemId").value = data.id;
+    document.getElementById("billItemUnitDisplay").textContent = data.default_unit;
+  });
 }
 
-function normalizeMenuItems(items) {
-  return (items || [])
-    .map((item) => ({
-      dish_id: item.dish_id,
-      display_order: item.display_order ?? item.dishes?.service_order ?? 10,
-      dish: item.dishes
-    }))
-    .sort((left, right) => left.display_order - right.display_order || left.dish.name.localeCompare(right.dish.name));
+function addLineItem() {
+  const stockSelect = document.getElementById("billStockItemId");
+  const qtyInput = document.getElementById("billItemQuantity");
+  const priceInput = document.getElementById("billItemUnitPrice");
+
+  const itemId = stockSelect.value;
+  const quantity = Number(qtyInput.value);
+  const unitPrice = Number(priceInput.value);
+
+  if (!itemId) {
+    alert("Please select a stock item.");
+    return;
+  }
+  if (!qtyInput.value || quantity <= 0) {
+    alert("Please enter a valid quantity greater than zero.");
+    return;
+  }
+  if (!priceInput.value || unitPrice < 0) {
+    alert("Please enter a valid unit price.");
+    return;
+  }
+
+  const item = appState.records.stock_items.find((x) => x.id === itemId);
+  if (!item) return;
+
+  const existingIndex = appState.currentBillItems.findIndex((x) => x.stock_item_id === itemId);
+  const lineTotal = Number((quantity * unitPrice).toFixed(2));
+
+  if (existingIndex > -1) {
+    appState.currentBillItems[existingIndex].quantity += quantity;
+    appState.currentBillItems[existingIndex].line_total = Number(
+      (appState.currentBillItems[existingIndex].quantity * appState.currentBillItems[existingIndex].unit_price).toFixed(2)
+    );
+  } else {
+    appState.currentBillItems.push({
+      stock_item_id: itemId,
+      name: item.name,
+      quantity,
+      unit: item.default_unit,
+      unit_price: unitPrice,
+      line_total: lineTotal
+    });
+  }
+
+  stockSelect.value = "";
+  qtyInput.value = "";
+  priceInput.value = "";
+  document.getElementById("billItemUnitDisplay").textContent = "unit";
+
+  renderBillItems();
+  updateSummaryCounts();
+}
+
+// Exposed globally so inline HTML onclick attributes can access it
+window.removeBillItem = function (index) {
+  appState.currentBillItems.splice(index, 1);
+  renderBillItems();
+  updateSummaryCounts();
+};
+
+function renderBillItems() {
+  const body = document.getElementById("billItemsBody");
+  const totalDisplay = document.getElementById("billTotalDisplay");
+  const approveBtn = document.getElementById("approveBillBtn");
+
+  if (!body) return;
+
+  if (appState.currentBillItems.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">No bill items added yet.</td>
+      </tr>
+    `;
+    totalDisplay.textContent = "₹0.00";
+    approveBtn.disabled = true;
+    return;
+  }
+
+  body.innerHTML = appState.currentBillItems
+    .map((line, idx) => {
+      return `
+      <tr>
+        <td style="padding: 10px 4px;"><strong>${line.name}</strong></td>
+        <td style="padding: 10px 4px; text-align: right;">${line.quantity.toFixed(3)}</td>
+        <td style="padding: 10px 4px; color: var(--clay);">${line.unit}</td>
+        <td style="padding: 10px 4px; text-align: right;">₹${line.unit_price.toFixed(2)}</td>
+        <td style="padding: 10px 4px; text-align: right; font-weight: 500;">₹${line.line_total.toFixed(2)}</td>
+        <td style="padding: 10px 4px; text-align: center;">
+          <button class="btn-delete-row" onclick="window.removeBillItem(${idx})" title="Remove item">&times;</button>
+        </td>
+      </tr>
+    `;
+    })
+    .join("");
+
+  const grandTotal = appState.currentBillItems.reduce((sum, item) => sum + item.line_total, 0);
+  totalDisplay.textContent = `₹${grandTotal.toFixed(2)}`;
+  approveBtn.disabled = false;
+}
+
+function clearBillForm() {
+  appState.currentBillItems = [];
+  document.getElementById("purchaseEntryForm").reset();
+  
+  // Set default values back
+  const dateInput = document.getElementById("billDate");
+  if (dateInput) {
+    dateInput.value = appState.selectedDate;
+  }
+  
+  renderBillItems();
+  updateSummaryCounts();
+  clearFeedback();
+}
+
+async function saveApprovedBill() {
+  clearFeedback();
+
+  const vendorSelect = document.getElementById("billVendorId");
+  const dateInput = document.getElementById("billDate");
+  const billNumberInput = document.getElementById("billNumber");
+
+  const vendorId = vendorSelect.value;
+  const billDate = dateInput.value;
+  const billNumber = billNumberInput.value.trim() || null;
+
+  if (!vendorId) {
+    setFeedback("Please select a vendor.", true);
+    return;
+  }
+  if (!billDate) {
+    setFeedback("Please enter a bill date.", true);
+    return;
+  }
+  if (appState.currentBillItems.length === 0) {
+    setFeedback("Please add at least one line item.", true);
+    return;
+  }
+
+  const grandTotal = appState.currentBillItems.reduce((sum, item) => sum + item.line_total, 0);
+  const isOwner = appState.profile?.role_code === "owner";
+  const status = isOwner ? "approved" : "pending_review";
+
+  const { data: billData, error: headerErr } = await supabaseClient
+    .from("purchase_bills")
+    .insert({
+      vendor_id: vendorId,
+      bill_date: billDate,
+      bill_number: billNumber,
+      subtotal: grandTotal,
+      total: grandTotal,
+      status: status
+    })
+    .select()
+    .single();
+
+  if (headerErr) {
+    alert("Error saving bill: " + headerErr.message);
+    return;
+  }
+
+  const payloadItems = appState.currentBillItems.map((item) => ({
+    purchase_bill_id: billData.id,
+    stock_item_id: item.stock_item_id,
+    raw_item_name: item.name,
+    quantity: item.quantity,
+    unit: item.unit,
+    unit_price: item.unit_price,
+    line_total: item.line_total,
+    match_status: "matched"
+  }));
+
+  const { error: itemsErr } = await supabaseClient
+    .from("purchase_bill_items")
+    .insert(payloadItems);
+
+  if (itemsErr) {
+    alert("Error saving bill items: " + itemsErr.message);
+    return;
+  }
+
+  const successMsg = isOwner
+    ? "Purchase bill approved! Stock quantities updated."
+    : "Purchase bill submitted for owner review.";
+
+  setFeedback(successMsg);
+  clearBillForm();
+  await loadDashboardData();
 }
 
 function updateSummaryCounts() {
-  document.getElementById("selectedCountValue").textContent = String(appState.selectedDishIds.length);
-  document.getElementById("yesterdayCountValue").textContent = String(appState.records.yesterdayMenuItems.length);
-  document.getElementById("overviewCountValue").textContent = String(appState.records.overviewMenus.length);
+  const currentCount = appState.currentBillItems.length;
+  // Needing review count
+  const needingReview = appState.records.purchase_bills.filter((x) => x.status === "pending_review" || x.status === "draft").length;
+  
+  document.getElementById("selectedCountValue").textContent = String(currentCount);
+  document.getElementById("yesterdayCountValue").textContent = String(appState.records.purchase_bills.filter(x => x.status === 'approved').length);
+  document.getElementById("overviewCountValue").textContent = String(needingReview);
 }
 
 function renderSetupAlert() {
   const alert = document.getElementById("setupAlert");
+  if (!alert) return;
 
   if (!appState.setupError) {
     alert.classList.add("hidden");
@@ -409,193 +574,65 @@ function renderSetupAlert() {
   }
 
   alert.classList.remove("hidden");
-  alert.textContent =
-    "Stock tracking tables are not ready in Supabase yet. Phase 1 will replace the legacy menu tables with stock tables. Latest error: " +
-    appState.setupError;
-}
-
-function renderDishPicker() {
-  const picker = document.getElementById("dishPicker");
-
-  if (!appState.records.dishes.length) {
-    picker.innerHTML = '<p class="summary-empty">No active stock items yet. Add items in Stock Setup first.</p>';
-    return;
-  }
-
-  picker.innerHTML = appState.records.dishes
-    .map((dish) => {
-      const checked = appState.selectedDishIds.includes(dish.id);
-      return `
-        <label class="dish-option ${checked ? "dish-option-selected" : ""}">
-          <input class="dish-checkbox" type="checkbox" value="${dish.id}" ${checked ? "checked" : ""}>
-          <span class="dish-option-body">
-            <strong>${dish.name}</strong>
-            <small>${dish.category}${dish.is_jain ? " - Track closely" : ""}</small>
-          </span>
-        </label>
-      `;
-    })
-    .join("");
-
-  picker.querySelectorAll(".dish-checkbox").forEach((input) => {
-    input.addEventListener("change", () => {
-      const dishId = input.value;
-      if (input.checked) {
-        if (!appState.selectedDishIds.includes(dishId)) {
-          appState.selectedDishIds.push(dishId);
-        }
-      } else {
-        appState.selectedDishIds = appState.selectedDishIds.filter((id) => id !== dishId);
-      }
-
-      clearFeedback();
-      updateSummaryCounts();
-      renderDishPicker();
-      renderSelectedMenu();
-    });
-  });
-}
-
-function renderSelectedMenu() {
-  const selectedStack = document.getElementById("selectedMenuList");
-  const selectedRecords = appState.records.dishes.filter((dish) => appState.selectedDishIds.includes(dish.id));
-  const sortedSelected = selectedRecords.sort((left, right) => {
-    const leftIndex = appState.selectedDishIds.indexOf(left.id);
-    const rightIndex = appState.selectedDishIds.indexOf(right.id);
-    return leftIndex - rightIndex;
-  });
-
-  if (!sortedSelected.length) {
-    selectedStack.innerHTML = '<p class="summary-empty">No bill items selected yet.</p>';
-    return;
-  }
-
-  selectedStack.innerHTML = sortedSelected
-    .map(
-      (dish, index) => `
-        <article class="selected-card">
-          <div>
-            <strong>${index + 1}. ${dish.name}</strong>
-            <p>${dish.category}${dish.is_jain ? " - Track closely" : ""}</p>
-          </div>
-          <button class="btn btn-outline btn-small" type="button" data-remove-dish="${dish.id}">
-            Remove
-          </button>
-        </article>
-      `
-    )
-    .join("");
-
-  selectedStack.querySelectorAll("[data-remove-dish]").forEach((button) => {
-    button.addEventListener("click", () => {
-      appState.selectedDishIds = appState.selectedDishIds.filter((id) => id !== button.dataset.removeDish);
-      clearFeedback();
-      updateSummaryCounts();
-      renderDishPicker();
-      renderSelectedMenu();
-    });
-  });
+  alert.textContent = "Database check: " + appState.setupError;
 }
 
 function renderOverviewGrid() {
   const container = document.getElementById("overviewGrid");
-  container.innerHTML = `
-    <article class="overview-card">
-      <div class="panel-header">
-        <div>
-          <p class="eyebrow">Bill review</p>
-          <h3>Supplier bills will appear here</h3>
+  if (!container) return;
+
+  if (appState.records.purchase_bills.length === 0) {
+    container.innerHTML = `
+      <article class="overview-card" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; width: 100%;">
+        <p class="summary-empty">No purchase bills recorded for this date.</p>
+      </article>
+    `;
+    return;
+  }
+
+  container.innerHTML = appState.records.purchase_bills
+    .map((bill) => {
+      let badgeClass = "record-pill-muted";
+      let statusText = "Draft";
+
+      if (bill.status === "approved") {
+        badgeClass = "record-pill-live";
+        statusText = "Approved & Added";
+      } else if (bill.status === "pending_review") {
+        badgeClass = "record-pill-pending";
+        statusText = "Pending Review";
+      } else if (bill.status === "rejected") {
+        badgeClass = "record-pill-rejected";
+        statusText = "Rejected";
+      }
+
+      const formattedDate = new Date(bill.bill_date).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+
+      const billRef = bill.bill_number ? `#${bill.bill_number}` : `ID: ${bill.id.slice(0, 8)}`;
+
+      return `
+      <article class="record-card">
+        <div class="record-main" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <div>
+            <h4 style="margin: 0 0 4px 0;">${bill.vendors?.name || "Unknown Vendor"}</h4>
+            <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--clay);">${formattedDate} - ${billRef}</p>
+            <strong style="font-size: 1.05rem; color: var(--ink);">₹${bill.total.toFixed(2)}</strong>
+          </div>
+          <span class="record-pill ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">${statusText}</span>
         </div>
-      </div>
-      <p class="summary-empty">Phase 1 will add purchase bills and stock movements. For now this screen is reframed around the stock-control workflow.</p>
-    </article>
-  `;
-}
-
-async function copyYesterdayMenu() {
-  appState.selectedDishIds = appState.records.yesterdayMenuItems.map((item) => item.dish_id);
-  setFeedback(
-    appState.selectedDishIds.length
-      ? "The previous purchase draft has been copied for review."
-      : "There was no previous purchase draft, so this draft stayed empty."
-  );
-  updateSummaryCounts();
-  renderDishPicker();
-  renderSelectedMenu();
-}
-
-function clearSelectedMenu() {
-  appState.selectedDishIds = [];
-  clearFeedback();
-  updateSummaryCounts();
-  renderDishPicker();
-  renderSelectedMenu();
-}
-
-async function saveMenu() {
-  clearFeedback();
-
-  if (!appState.selectedOutletId || !appState.selectedDate) {
-    setFeedback("Choose a purchase date before saving.", true);
-    return;
-  }
-
-  if (!appState.selectedDishIds.length) {
-    setFeedback("Select at least one bill item before saving.", true);
-    return;
-  }
-
-  let menuId = appState.menuId;
-
-  if (!menuId) {
-    const { data, error } = await supabaseClient
-      .from("daily_menus")
-      .insert({
-        outlet_id: appState.selectedOutletId,
-        menu_date: appState.selectedDate
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    menuId = data.id;
-  } else {
-    const { error } = await supabaseClient
-      .from("daily_menu_items")
-      .delete()
-      .eq("daily_menu_id", menuId);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-  }
-
-  const dishMap = new Map(appState.records.dishes.map((dish) => [dish.id, dish]));
-  const payload = appState.selectedDishIds.map((dishId, index) => ({
-    daily_menu_id: menuId,
-    dish_id: dishId,
-    display_order: index + 1,
-    dish_name_snapshot: dishMap.get(dishId)?.name || null
-  }));
-
-  const { error } = await supabaseClient.from("daily_menu_items").insert(payload);
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  appState.menuId = menuId;
-  setFeedback("Purchase draft saved.");
-  await loadPlannerData();
+      </article>
+    `;
+    })
+    .join("");
 }
 
 function setFeedback(message, isError = false) {
   const feedback = document.getElementById("saveFeedback");
+  if (!feedback) return;
   feedback.classList.remove("hidden", "inline-feedback-error");
   feedback.textContent = message;
   if (isError) {
@@ -605,25 +642,10 @@ function setFeedback(message, isError = false) {
 
 function clearFeedback() {
   const feedback = document.getElementById("saveFeedback");
+  if (!feedback) return;
   feedback.classList.add("hidden");
   feedback.classList.remove("inline-feedback-error");
   feedback.textContent = "";
-}
-
-function getCurrentOutlet() {
-  return appState.accessibleOutlets.find((outlet) => outlet.id === appState.selectedOutletId) || null;
-}
-
-function getTomorrowDate() {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return toIsoDate(date);
-}
-
-function shiftDate(isoDate, days) {
-  const date = new Date(`${isoDate}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return toIsoDate(date);
 }
 
 function toIsoDate(date) {
