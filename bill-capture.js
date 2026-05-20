@@ -1006,7 +1006,7 @@ async function handleOcrExtraction() {
     document.getElementById("extractedBillDate").value = mockData.billDate;
 
     // Render items list
-    renderExtractedLinesTable();
+    renderExtractedItems();
 
     // Render visual attachment box
     const localViewUrl = URL.createObjectURL(file);
