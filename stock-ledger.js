@@ -78,6 +78,10 @@ function wireLedgerEvents() {
   // Manual movement submission listener
   document.getElementById("logMovementBtn")?.addEventListener("click", saveManualMovement);
 
+  // Wire global delete modal
+  document.getElementById("cancelDeleteBtn")?.addEventListener("click", hideDeleteModal);
+  document.getElementById("confirmDeleteBtn")?.addEventListener("click", executeGlobalDelete);
+
   // Prevent accidental changes to number inputs via mouse wheel scrolling
   window.addEventListener("wheel", () => {
     if (document.activeElement && document.activeElement.type === "number") {
@@ -285,6 +289,11 @@ function renderLedgerTable() {
       const sign = isNegative ? "-" : "+";
       const qtyColor = isNegative ? "var(--crimson)" : "var(--emerald)";
 
+      const isOwner = appState.profile?.role_code === 'owner';
+      const deleteCell = isOwner
+        ? `<td style="padding: 10px 4px; text-align: center;"><button class="btn btn-danger" style="font-size: 0.72rem; padding: 3px 8px; height: auto;" onclick="window.showMovementDeleteModal('${m.id}', '${m.stock_items?.name || 'Unknown'}')">Delete</button></td>`
+        : `<td></td>`;
+
       return `
       <tr>
         <td style="padding: 10px 4px; font-size: 0.85rem; color: var(--clay);">${timestamp}</td>
@@ -295,6 +304,7 @@ function renderLedgerTable() {
         <td style="padding: 10px 4px; text-align: right; font-weight: bold; color: ${qtyColor};">${sign}${qty.toFixed(3)}</td>
         <td style="padding: 10px 4px; color: var(--clay);">${m.unit}</td>
         <td style="padding: 10px 4px; font-size: 0.85rem; color: var(--ink);">${m.notes || ""}</td>
+        ${deleteCell}
       </tr>
     `;
     })
@@ -420,3 +430,35 @@ async function loadActiveAlertsBadge() {
   }
 }
 
+// ---- Global Delete Modal (Movements) ----
+let deleteMovementTarget = null; // { id: string }
+
+window.showMovementDeleteModal = function(movementId, itemName) {
+  deleteMovementTarget = { id: movementId };
+  const modal = document.getElementById("globalDeleteModal");
+  const title = document.getElementById("deleteModalTitle");
+  const text = document.getElementById("deleteModalText");
+
+  title.textContent = "Delete Stock Movement";
+  text.textContent = `Are you sure you want to delete this ${itemName} movement record? This will permanently remove it from the audit trail.`;
+  modal.classList.add("active");
+};
+
+function hideDeleteModal() {
+  deleteMovementTarget = null;
+  document.getElementById("globalDeleteModal")?.classList.remove("active");
+}
+
+async function executeGlobalDelete() {
+  if (!deleteMovementTarget) return;
+  const { id } = deleteMovementTarget;
+
+  const { error } = await supabaseClient.from("stock_movements").delete().eq("id", id);
+
+  if (error) {
+    alert("Delete failed: " + error.message);
+  } else {
+    await loadLedgerData();
+  }
+  hideDeleteModal();
+}
