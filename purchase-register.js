@@ -112,6 +112,7 @@ async function setupRegister(user) {
   }
 
   renderAccessCopy();
+  await loadActiveAlertsBadge();
   await loadRegisterData();
 }
 
@@ -185,6 +186,7 @@ async function loadRegisterData() {
       bill_date,
       total,
       status,
+      file_url,
       vendors (name)
     `)
     .eq("bill_date", appState.selectedDate)
@@ -572,6 +574,14 @@ function renderOverviewGrid() {
 
       const billRef = bill.bill_number ? `#${bill.bill_number}` : `ID: ${bill.id.slice(0, 8)}`;
 
+      const fileLink = bill.file_url 
+        ? `<div style="margin-top: 6px;"><a href="${bill.file_url}" target="_blank" title="View PDF/Image Attachment" style="text-decoration: none; color: var(--saffron); font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+            </svg>View Attachment
+           </a></div>`
+        : "";
+
       return `
       <article class="record-card">
         <div class="record-main" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
@@ -579,6 +589,7 @@ function renderOverviewGrid() {
             <h4 style="margin: 0 0 4px 0;">${bill.vendors?.name || "Unknown Vendor"}</h4>
             <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--clay);">${formattedDate} - ${billRef}</p>
             <strong style="font-size: 1.05rem; color: var(--ink);">₹${bill.total.toFixed(2)}</strong>
+            ${fileLink}
           </div>
           <span class="record-pill ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">${statusText}</span>
         </div>
@@ -612,3 +623,27 @@ function toIsoDate(date) {
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+async function loadActiveAlertsBadge() {
+  try {
+    const { count, error } = await supabaseClient
+      .from('bill_alerts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+      
+    if (error) throw error;
+    
+    const badge = document.getElementById('alertsCountBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load active alerts badge:', err);
+  }
+}
+

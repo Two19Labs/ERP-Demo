@@ -100,6 +100,7 @@ async function setupLedger(user) {
 
   renderAccessCopy();
   await initReferences();
+  await loadActiveAlertsBadge();
   await loadLedgerData();
 }
 
@@ -395,3 +396,27 @@ function clearFeedback() {
   feedback.classList.remove("inline-feedback-error");
   feedback.textContent = "";
 }
+
+async function loadActiveAlertsBadge() {
+  try {
+    const { count, error } = await supabaseClient
+      .from('bill_alerts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+      
+    if (error) throw error;
+    
+    const badge = document.getElementById('alertsCountBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load active alerts badge:', err);
+  }
+}
+

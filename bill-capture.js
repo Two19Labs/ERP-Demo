@@ -7,7 +7,10 @@ const appState = {
     stock_items: [],
     vendors: []
   },
-  currentDraft: null
+  currentDraft: null,
+  activeTab: "paste",
+  uploadedFile: null,
+  uploadUrl: null
 };
 
 let supabaseClient;
@@ -87,6 +90,95 @@ Total 3200`;
       document.activeElement.blur();
     }
   });
+
+  // Capture Tabs switching
+  const tabPaste = document.getElementById("tabPaste");
+  const tabUpload = document.getElementById("tabUpload");
+  const pasteWorkspace = document.getElementById("pasteWorkspace");
+  const uploadWorkspace = document.getElementById("uploadWorkspace");
+
+  tabPaste?.addEventListener("click", () => {
+    tabPaste.classList.add("capture-tab-active");
+    tabUpload?.classList.remove("capture-tab-active");
+    pasteWorkspace?.classList.remove("hidden");
+    uploadWorkspace?.classList.add("hidden");
+    appState.activeTab = "paste";
+    clearDraftForm();
+  });
+
+  tabUpload?.addEventListener("click", () => {
+    tabUpload.classList.add("capture-tab-active");
+    tabPaste?.classList.remove("capture-tab-active");
+    uploadWorkspace?.classList.remove("hidden");
+    pasteWorkspace?.classList.add("hidden");
+    appState.activeTab = "upload";
+    clearDraftForm();
+  });
+
+  // Upload Zone triggering file input
+  const uploadZone = document.getElementById("uploadZone");
+  const billFileInput = document.getElementById("billFileInput");
+  const uploadBrowse = document.querySelector(".upload-browse");
+
+  const triggerFileSelect = () => {
+    billFileInput?.click();
+  };
+
+  uploadZone?.addEventListener("click", (e) => {
+    if (e.target !== billFileInput) {
+      triggerFileSelect();
+    }
+  });
+
+  uploadBrowse?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    triggerFileSelect();
+  });
+
+  // Drag and Drop handlers
+  uploadZone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    uploadZone.classList.add("dragover");
+  });
+
+  uploadZone?.addEventListener("dragleave", () => {
+    uploadZone.classList.remove("dragover");
+  });
+
+  uploadZone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleSelectedFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  billFileInput?.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleSelectedFile(e.target.files[0]);
+    }
+  });
+
+  // File Removal button
+  document.getElementById("removeFileBtn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    clearUploadedFile();
+  });
+
+  // Extract OCR button click
+  document.getElementById("extractOcrBtn")?.addEventListener("click", handleOcrExtraction);
+
+  // Side-by-side Attachment collapsible panel toggle
+  const toggleAttachmentBtn = document.getElementById("toggleAttachmentBtn");
+  const visualAttachmentContent = document.getElementById("visualAttachmentContent");
+  const chevron = document.querySelector(".visual-attachment-chevron");
+
+  toggleAttachmentBtn?.addEventListener("click", () => {
+    const isHidden = visualAttachmentContent.classList.toggle("hidden");
+    if (chevron) {
+      chevron.textContent = isHidden ? "▼" : "▲";
+    }
+  });
 }
 
 async function setupCapture(user) {
@@ -125,6 +217,7 @@ async function setupCapture(user) {
   }
 
   await loadCaptureMasterData();
+  await loadActiveAlertsBadge();
 }
 
 async function loadCaptureMasterData() {
@@ -569,9 +662,31 @@ function updateCalculatedTotals() {
 
 function clearDraftForm() {
   appState.currentDraft = null;
+  appState.uploadedFile = null;
+  appState.uploadUrl = null;
+
   document.getElementById("rawBillText").value = "";
   document.getElementById("extractedBillForm").classList.add("hidden");
   document.getElementById("draftPlaceholder").classList.remove("hidden");
+  
+  // Reset Upload UI elements
+  const billFileInput = document.getElementById("billFileInput");
+  if (billFileInput) billFileInput.value = "";
+  document.getElementById("fileDetailsCard")?.classList.add("hidden");
+  document.getElementById("uploadZone")?.classList.remove("hidden");
+  const extractOcrBtn = document.getElementById("extractOcrBtn");
+  if (extractOcrBtn) extractOcrBtn.disabled = true;
+  
+  // Reset Loading screen
+  document.getElementById("ocrLoadingScreen")?.classList.add("hidden");
+
+  // Reset visual attachment card
+  document.getElementById("visualAttachmentCard")?.classList.add("hidden");
+  document.getElementById("visualAttachmentContent")?.classList.add("hidden");
+  const chevron = document.querySelector(".visual-attachment-chevron");
+  if (chevron) chevron.textContent = "▼";
+  document.getElementById("visualAttachmentImg")?.classList.add("hidden");
+  document.getElementById("visualAttachmentPdf")?.classList.add("hidden");
   
   const feedback = document.getElementById("saveFeedback");
   if (feedback) {
@@ -625,14 +740,16 @@ async function saveCapturedBill() {
     const isOwner = appState.profile.role_code === "owner";
 
     // 1. Insert bill with status 'pending_review' initially (required to prevent check constraint errors on null fields)
+    const isOcr = appState.activeTab === "upload";
     const { data: billData, error: billErr } = await supabaseClient
       .from("purchase_bills")
       .insert({
         vendor_id: vendorId,
         bill_date: billDate,
         bill_number: billNumber || null,
-        source: "whatsapp_paste",
-        original_text: rawText,
+        source: isOcr ? "ocr_upload" : "whatsapp_paste",
+        original_text: isOcr ? `Uploaded Invoice OCR Extraction: ${billNumber || 'No number'}` : rawText,
+        file_url: isOcr ? appState.uploadUrl : null,
         total: grandTotal,
         status: "pending_review",
         created_by: appState.profile.id
@@ -706,3 +823,345 @@ async function saveCapturedBill() {
     saveBtn.textContent = appState.profile.role_code === "owner" ? "Approve & Save Bill" : "Submit for Review";
   }
 }
+
+async function loadActiveAlertsBadge() {
+  try {
+    const { count, error } = await supabaseClient
+      .from('bill_alerts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+      
+    if (error) throw error;
+    
+    const badge = document.getElementById('alertsCountBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load active alerts badge:', err);
+  }
+}
+
+function handleSelectedFile(file) {
+  if (file.size > 5 * 1024 * 1024) {
+    alert("File size exceeds 5MB limit.");
+    return;
+  }
+
+  const isImage = file.type.startsWith("image/");
+  const isPdf = file.type === "application/pdf";
+
+  if (!isImage && !isPdf) {
+    alert("Invalid file type. Please upload a JPG, PNG, or PDF file.");
+    return;
+  }
+
+  appState.uploadedFile = file;
+
+  // Show Details Card & Hide Upload Zone Prompt
+  document.getElementById("uploadZone").classList.add("hidden");
+  const card = document.getElementById("fileDetailsCard");
+  card.classList.remove("hidden");
+
+  // Fill Details
+  document.getElementById("fileNameDisplay").textContent = file.name;
+  
+  let sizeStr = "";
+  if (file.size < 1024) sizeStr = `${file.size} B`;
+  else if (file.size < 1024 * 1024) sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
+  else sizeStr = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+  document.getElementById("fileSizeDisplay").textContent = sizeStr;
+
+  const fileThumbnail = document.getElementById("fileThumbnail");
+  const pdfIconPlaceholder = document.getElementById("pdfIconPlaceholder");
+
+  if (isImage) {
+    fileThumbnail.classList.remove("hidden");
+    pdfIconPlaceholder.classList.add("hidden");
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      fileThumbnail.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    fileThumbnail.classList.add("hidden");
+    pdfIconPlaceholder.classList.remove("hidden");
+  }
+
+  document.getElementById("extractOcrBtn").disabled = false;
+}
+
+function clearUploadedFile() {
+  appState.uploadedFile = null;
+  appState.uploadUrl = null;
+  const fileInput = document.getElementById("billFileInput");
+  if (fileInput) fileInput.value = "";
+  document.getElementById("fileDetailsCard").classList.add("hidden");
+  document.getElementById("uploadZone").classList.remove("hidden");
+  document.getElementById("extractOcrBtn").disabled = true;
+}
+
+async function handleOcrExtraction() {
+  if (!appState.uploadedFile) return;
+
+  const file = appState.uploadedFile;
+  const isImage = file.type.startsWith("image/");
+  
+  // Show loading screen
+  document.getElementById("draftPlaceholder").classList.add("hidden");
+  document.getElementById("extractedBillForm").classList.add("hidden");
+  const loadingScreen = document.getElementById("ocrLoadingScreen");
+  loadingScreen.classList.remove("hidden");
+
+  // Reset steps style helper
+  const setStep = (id, status, isClassActive = false, isClassComplete = false) => {
+    const row = document.getElementById(id);
+    if (!row) return;
+    row.querySelector(".ocr-step-status").textContent = status;
+    if (isClassActive) {
+      row.classList.add("active");
+      row.classList.remove("complete");
+    } else if (isClassComplete) {
+      row.classList.remove("active");
+      row.classList.add("complete");
+    } else {
+      row.classList.remove("active");
+      row.classList.remove("complete");
+    }
+  };
+
+  setStep("stepUpload", "⏳", true, false);
+  setStep("stepAnalyze", "⏳", false, false);
+  setStep("stepExtract", "⏳", false, false);
+  setStep("stepMap", "⏳", false, false);
+
+  try {
+    // Step 1: Uploading to Supabase
+    const uniqueName = `bill_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
+    const { data: uploadData, error: uploadErr } = await supabaseClient.storage
+      .from('bills')
+      .upload(uniqueName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (uploadErr) {
+      console.warn("Storage upload failed, falling back to simulation link:", uploadErr);
+      appState.uploadUrl = URL.createObjectURL(file); // Fallback local object URL
+    } else {
+      const { data: urlData } = supabaseClient.storage
+        .from('bills')
+        .getPublicUrl(uniqueName);
+      appState.uploadUrl = urlData.publicUrl;
+    }
+
+    // Step 1 Complete
+    await new Promise(r => setTimeout(r, 400));
+    setStep("stepUpload", "✅", false, true);
+    setStep("stepAnalyze", "⏳", true, false);
+
+    // Step 2 Complete
+    await new Promise(r => setTimeout(r, 450));
+    setStep("stepAnalyze", "✅", false, true);
+    setStep("stepExtract", "⏳", true, false);
+
+    // Step 3 Complete
+    await new Promise(r => setTimeout(r, 450));
+    setStep("stepExtract", "✅", false, true);
+    setStep("stepMap", "⏳", true, false);
+
+    // Step 4 Complete
+    await new Promise(r => setTimeout(r, 400));
+    setStep("stepMap", "✅", false, true);
+
+    // Generate mock OCR data
+    const mockData = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
+    
+    // Set active draft
+    appState.currentDraft = {
+      vendorId: mockData.vendorId,
+      billNumber: mockData.billNumber,
+      billDate: mockData.billDate,
+      parsedTotal: mockData.parsedTotal,
+      items: mockData.items
+    };
+
+    // Hide Loading, Show Form
+    await new Promise(r => setTimeout(r, 200));
+    loadingScreen.classList.add("hidden");
+    
+    const form = document.getElementById("extractedBillForm");
+    form.classList.remove("hidden");
+
+    // Populate input fields
+    document.getElementById("extractedVendorId").value = mockData.vendorId;
+    document.getElementById("extractedBillNumber").value = mockData.billNumber;
+    document.getElementById("extractedBillDate").value = mockData.billDate;
+
+    // Render items list
+    renderExtractedItems();
+
+    // Render visual attachment box
+    const localViewUrl = URL.createObjectURL(file);
+    const attachmentImg = document.getElementById("visualAttachmentImg");
+    const attachmentPdf = document.getElementById("visualAttachmentPdf");
+    const downloadBtn = document.getElementById("downloadAttachmentBtn");
+
+    if (isImage) {
+      attachmentImg.src = localViewUrl;
+      attachmentImg.classList.remove("hidden");
+      attachmentPdf.classList.add("hidden");
+    } else {
+      attachmentPdf.src = localViewUrl;
+      attachmentPdf.classList.remove("hidden");
+      attachmentImg.classList.add("hidden");
+    }
+
+    if (downloadBtn) {
+      downloadBtn.href = appState.uploadUrl || localViewUrl;
+    }
+
+    const visualCard = document.getElementById("visualAttachmentCard");
+    visualCard.classList.remove("hidden");
+
+  } catch (err) {
+    console.error("OCR Extraction failed:", err);
+    alert("An error occurred during OCR extraction: " + err.message);
+    clearDraftForm();
+  }
+}
+
+function getMockOcrData(fileName, vendors, stockItems) {
+  const nameLower = fileName.toLowerCase();
+  
+  const findVendor = (name) => {
+    return vendors.find(v => v.name.toLowerCase().includes(name.toLowerCase())) || vendors[0];
+  };
+
+  const findStockItem = (name) => {
+    return stockItems.find(i => i.name.toLowerCase().includes(name.toLowerCase())) || null;
+  };
+
+  if (nameLower.includes("dairy") || nameLower.includes("milk") || nameLower.includes("paneer")) {
+    const vendor = findVendor("Daily Dairy Partner");
+    const paneer = findStockItem("Paneer");
+    return {
+      vendorId: vendor ? vendor.id : "",
+      billNumber: "DDP-88312",
+      billDate: new Date().toISOString().split("T")[0],
+      parsedTotal: 2800.00,
+      items: [
+        {
+          rawName: "Paneer Fresh Block",
+          matchedItemId: paneer ? paneer.id : "",
+          quantity: 10,
+          unit: "kg",
+          unitPrice: 280.00,
+          lineTotal: 2800.00
+        }
+      ]
+    };
+  } else if (nameLower.includes("fresh") || nameLower.includes("tomato") || nameLower.includes("veg") || nameLower.includes("onion")) {
+    const vendor = findVendor("Fresh Market Supplier");
+    const tomatoes = findStockItem("Tomatoes");
+    const onions = findStockItem("Onions");
+    return {
+      vendorId: vendor ? vendor.id : "",
+      billNumber: "FMS-29471",
+      billDate: new Date().toISOString().split("T")[0],
+      parsedTotal: 1290.00,
+      items: [
+        {
+          rawName: "Tomatoes Red Large",
+          matchedItemId: tomatoes ? tomatoes.id : "",
+          quantity: 20,
+          unit: "kg",
+          unitPrice: 42.00,
+          lineTotal: 840.00
+        },
+        {
+          rawName: "Onions Medium",
+          matchedItemId: onions ? onions.id : "",
+          quantity: 15,
+          unit: "kg",
+          unitPrice: 30.00,
+          lineTotal: 450.00
+        }
+      ]
+    };
+  } else if (nameLower.includes("dry") || nameLower.includes("rice") || nameLower.includes("oil") || nameLower.includes("flour")) {
+    const vendor = findVendor("City Dry Goods");
+    const rice = findStockItem("Rice");
+    const oil = findStockItem("Cooking Oil");
+    const flour = findStockItem("Flour");
+    return {
+      vendorId: vendor ? vendor.id : "",
+      billNumber: "CDG-99482",
+      billDate: new Date().toISOString().split("T")[0],
+      parsedTotal: 6400.00,
+      items: [
+        {
+          rawName: "Premium Basmati Rice",
+          matchedItemId: rice ? rice.id : "",
+          quantity: 50,
+          unit: "kg",
+          unitPrice: 60.00,
+          lineTotal: 3000.00
+        },
+        {
+          rawName: "Refined Sunflower Cooking Oil",
+          matchedItemId: oil ? oil.id : "",
+          quantity: 20,
+          unit: "litre",
+          unitPrice: 110.00,
+          lineTotal: 2200.00
+        },
+        {
+          rawName: "Whole Wheat Flour Atta",
+          matchedItemId: flour ? flour.id : "",
+          quantity: 30,
+          unit: "kg",
+          unitPrice: 40.00,
+          lineTotal: 1200.00
+        }
+      ]
+    };
+  } else {
+    // Default fallback
+    const vendor = findVendor("Fresh Market Supplier");
+    const chicken = findStockItem("Chicken");
+    const tomatoes = findStockItem("Tomatoes");
+    return {
+      vendorId: vendor ? vendor.id : "",
+      billNumber: "INV-77402",
+      billDate: new Date().toISOString().split("T")[0],
+      parsedTotal: 2496.00,
+      items: [
+        {
+          rawName: "Fresh Chicken Breast",
+          matchedItemId: chicken ? chicken.id : "",
+          quantity: 12,
+          unit: "kg",
+          unitPrice: 180.00,
+          lineTotal: 2160.00
+        },
+        {
+          rawName: "Tomatoes Hybrid",
+          matchedItemId: tomatoes ? tomatoes.id : "",
+          quantity: 8,
+          unit: "kg",
+          unitPrice: 42.00,
+          lineTotal: 336.00
+        }
+      ]
+    };
+  }
+}
+

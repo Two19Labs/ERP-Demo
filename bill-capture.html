@@ -32,10 +32,10 @@
       <a class="nav-item nav-link" href="stock-ledger.html">
         <span>Stock Ledger</span>
       </a>
-      <button class="nav-item" type="button" disabled title="Unlocks in Phase 7">
+      <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
         <span>Alerts</span>
-        <span class="nav-badge">Phase 7</span>
-      </button>
+        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+      </a>
     </nav>
 
     <div class="sidebar-note">
@@ -72,30 +72,71 @@
       <div id="setupAlert" class="setup-alert hidden"></div>
 
       <div class="workspace-grid" style="margin-top: 20px;">
-        <!-- Left Column: Paste Input Workspace -->
-        <section class="panel panel-soft">
+        <!-- Left Column: Paste Input / File Upload Workspace -->
+        <section class="panel panel-soft" style="display: flex; flex-direction: column;">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Data Entry</p>
-              <h3>Paste Invoice Text</h3>
+              <h3>Digitize Supplier Invoice</h3>
             </div>
           </div>
           
-          <div class="form-group">
-            <label for="rawBillText">WhatsApp Chat Copy / Raw Invoice Text <span class="required">*</span></label>
-            <textarea id="rawBillText" class="form-control text-area-control" style="min-height: 250px; font-family: monospace; font-size: 0.9rem;" placeholder="Paste text here... e.g.:
+          <div class="capture-tabs">
+            <button id="tabPaste" class="capture-tab capture-tab-active" type="button">WhatsApp Paste</button>
+            <button id="tabUpload" class="capture-tab" type="button">Upload Bill (OCR)</button>
+          </div>
+
+          <!-- Tab 1: WhatsApp Chat/Text Paste -->
+          <div id="pasteWorkspace" class="capture-workspace">
+            <div class="form-group" style="margin-top: 15px;">
+              <label for="rawBillText">WhatsApp Chat Copy / Raw Invoice Text <span class="required">*</span></label>
+              <textarea id="rawBillText" class="form-control text-area-control" style="min-height: 250px; font-family: monospace; font-size: 0.9rem;" placeholder="Paste text here... e.g.:
 Fresh Market Supplier
 Tomato 10 kg x 42 = 420
 Onion 8 kg x 30 = 240
 Total 660"></textarea>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; margin-bottom: 20px; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="demoBtn1" class="btn btn-outline btn-small" type="button">Load WhatsApp Demo</button>
+                <button id="demoBtn2" class="btn btn-outline btn-small" type="button">Load Alternative Demo</button>
+              </div>
+              <button id="parseBillBtn" class="btn btn-primary" type="button">Parse Bill & Extract Lines</button>
+            </div>
           </div>
 
-          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: space-between; align-items: center;">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button id="demoBtn1" class="btn btn-outline btn-small" type="button">Load WhatsApp Demo</button>
-              <button id="demoBtn2" class="btn btn-outline btn-small" type="button">Load Alternative Demo</button>
+          <!-- Tab 2: File Upload (OCR) -->
+          <div id="uploadWorkspace" class="capture-workspace hidden" style="margin-top: 15px; display: flex; flex-direction: column; flex: 1;">
+            <div id="uploadZone" class="upload-zone">
+              <div class="upload-zone-prompt">
+                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" style="color: var(--saffron); margin-bottom: 8px;">
+                  <path fill="none" d="M0 0h24v24H0z"/>
+                  <path d="M12.414 5H21a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h7.414l2 2zM4 5v14h16V7h-8.414l-2-2H4zm8 3l4 4h-3v4h-2v-4H8l4-4z" fill="currentColor"/>
+                </svg>
+                <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; color: var(--ink);">Drag and drop invoice image/PDF here</p>
+                <p style="font-size: 0.8rem; color: var(--clay); margin-bottom: 12px;">or <span class="upload-browse" style="color: var(--saffron); font-weight: 700; text-decoration: underline; cursor: pointer;">browse files</span></p>
+                <span class="upload-subtext" style="font-size: 0.72rem; color: var(--clay);">Supports JPG, PNG, and PDF up to 5MB</span>
+              </div>
+              <input type="file" id="billFileInput" accept="image/*,application/pdf" class="hidden">
             </div>
-            <button id="parseBillBtn" class="btn btn-primary" type="button">Parse Bill & Extract Lines</button>
+
+            <!-- File Details Card -->
+            <div id="fileDetailsCard" class="file-details-card hidden">
+              <div class="file-details-thumb-container">
+                <img id="fileThumbnail" class="file-details-thumb hidden" alt="Invoice thumbnail">
+                <div id="pdfIconPlaceholder" class="pdf-icon-placeholder hidden">PDF</div>
+              </div>
+              <div class="file-details-info">
+                <strong id="fileNameDisplay" style="font-size: 0.85rem; color: var(--ink); word-break: break-all;">invoice.png</strong>
+                <span id="fileSizeDisplay" style="font-size: 0.75rem; color: var(--clay);">145 KB</span>
+              </div>
+              <button id="removeFileBtn" class="file-remove-btn" type="button" title="Remove File">&times;</button>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: auto; padding-top: 15px; margin-bottom: 20px;">
+              <button id="extractOcrBtn" class="btn btn-primary" type="button" disabled>Extract Bill with OCR</button>
+            </div>
           </div>
         </section>
 
@@ -112,12 +153,55 @@ Total 660"></textarea>
           <div id="draftPlaceholder" class="placeholder-view">
             <div class="placeholder-icon">📄</div>
             <h4>No draft extracted yet</h4>
-            <p>Paste supplier bill text on the left and click "Parse Bill & Extract Lines" to view the matched draft here.</p>
+            <p>Paste supplier bill text on the left, or upload an invoice file and run OCR extraction to view the matched draft here.</p>
+          </div>
+
+          <!-- OCR Loading Screen -->
+          <div id="ocrLoadingScreen" class="placeholder-view hidden">
+            <div class="ocr-spinner"></div>
+            <h4 style="margin-top: 15px; color: var(--ink);">OCR Extraction In Progress</h4>
+            <p style="margin-bottom: 20px; font-size: 0.85rem; color: var(--clay);">Digitizing uploaded receipt photo...</p>
+            
+            <div class="ocr-steps-indicator">
+              <div class="ocr-step-indicator-row" id="stepUpload">
+                <span class="ocr-step-status">⏳</span>
+                <span class="ocr-step-text">Uploading invoice to Supabase Storage...</span>
+              </div>
+              <div class="ocr-step-indicator-row" id="stepAnalyze">
+                <span class="ocr-step-status">⏳</span>
+                <span class="ocr-step-text">Running layout structure OCR analysis...</span>
+              </div>
+              <div class="ocr-step-indicator-row" id="stepExtract">
+                <span class="ocr-step-status">⏳</span>
+                <span class="ocr-step-text">Parsing line item descriptions & prices...</span>
+              </div>
+              <div class="ocr-step-indicator-row" id="stepMap">
+                <span class="ocr-step-status">⏳</span>
+                <span class="ocr-step-text">Mapping items to stock catalogue...</span>
+              </div>
+            </div>
           </div>
 
           <!-- Parsed Bill Form (Initially hidden) -->
           <form id="extractedBillForm" class="details-form hidden" onsubmit="return false;">
-            <div class="form-group">
+            <!-- Collapsible Attachment Preview Panel -->
+            <div id="visualAttachmentCard" class="visual-attachment-card">
+              <div class="visual-attachment-header" id="toggleAttachmentBtn">
+                <span class="visual-attachment-title">📎 Attachment: View Original Invoice</span>
+                <span class="visual-attachment-chevron">▼</span>
+              </div>
+              <div id="visualAttachmentContent" class="visual-attachment-content hidden">
+                <div class="visual-attachment-viewer-box">
+                  <img id="visualAttachmentImg" class="visual-attachment-img hidden" alt="Uploaded Receipt">
+                  <embed id="visualAttachmentPdf" class="visual-attachment-pdf hidden" type="application/pdf" width="100%" height="250">
+                </div>
+                <div class="visual-attachment-actions" style="margin-top: 8px; text-align: right;">
+                  <a id="downloadAttachmentBtn" href="#" target="_blank" class="btn btn-outline btn-small" style="font-size: 0.75rem;">Open File in New Tab</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
               <label for="extractedVendorId">Vendor <span class="required">*</span></label>
               <select id="extractedVendorId" class="select-control" required>
                 <option value="">Select a vendor...</option>
