@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghoomar Thali ERP - Master Data</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">Ghoomar Thali ERP</p>
+      <h1>Master data for every outlet</h1>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a class="nav-item nav-link" href="dashboard.html">Menu Planner</a>
+      <a class="nav-item nav-item-active nav-link" href="master-data.html">Master Data</a>
+      <button class="nav-item" type="button" disabled>Procurement</button>
+      <button class="nav-item" type="button" disabled>Bookings</button>
+      <button class="nav-item" type="button" disabled>Billing</button>
+      <button class="nav-item" type="button" disabled>HQ Dashboard</button>
+    </nav>
+
+    <div class="sidebar-note">
+      <p class="note-label">Current goal</p>
+      <p id="sidebarScope">HQ owns shared dishes and ingredients. Managers maintain only their own vendor list.</p>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Phase 1</p>
+        <h2>Master Data</h2>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <span id="userEmail"></span>
+          <span id="userRole" class="role-pill"></span>
+        </div>
+        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="content-main">
+      <section class="hero-panel">
+        <div>
+          <p class="eyebrow">Reference data</p>
+          <h3 id="welcomeTitle">Loading master data</h3>
+          <p id="welcomeText" class="supporting-text">We are checking your outlet access, then loading dishes, ingredients, and vendors.</p>
+        </div>
+
+        <div class="hero-controls">
+          <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
+            <span>Vendor list for outlet</span>
+            <select id="outletSelector" class="select-control"></select>
+          </label>
+          <div id="managerOutletBadge" class="manager-badge hidden"></div>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <article class="status-card">
+          <p class="card-label">Dishes</p>
+          <strong id="dishCountValue">-</strong>
+          <span>Shared master list used later for menus and billing.</span>
+        </article>
+        <article class="status-card">
+          <p class="card-label">Ingredients</p>
+          <strong id="ingredientCountValue">-</strong>
+          <span>Shared raw material list used for purchases and costing.</span>
+        </article>
+        <article class="status-card">
+          <p class="card-label">Vendors</p>
+          <strong id="vendorCountValue">-</strong>
+          <span>Outlet-specific suppliers maintained by each branch.</span>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header panel-header-spread">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h3>Manage master records</h3>
+          </div>
+          <div id="workspaceBadge" class="mini-badge">Loading access</div>
+        </div>
+
+        <div class="tab-strip" role="tablist" aria-label="Master data modules">
+          <button class="tab-button tab-button-active" id="tabDishes" data-tab="dishes" type="button">Dishes</button>
+          <button class="tab-button" id="tabIngredients" data-tab="ingredients" type="button">Ingredients</button>
+          <button class="tab-button" id="tabVendors" data-tab="vendors" type="button">Vendors</button>
+        </div>
+
+        <div id="setupAlert" class="setup-alert hidden"></div>
+
+        <div class="master-grid">
+          <section class="panel panel-soft" id="listPanel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow" id="listEyebrow">Shared master list</p>
+                <h3 id="listTitle">Dishes</h3>
+              </div>
+            </div>
+            <div id="listBody" class="record-list">
+              <p class="summary-empty">Loading records.</p>
+            </div>
+          </section>
+
+          <section class="panel panel-soft" id="formPanel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow" id="formEyebrow">Edit form</p>
+                <h3 id="formTitle">Dish details</h3>
+              </div>
+            </div>
+
+            <div id="formHint" class="form-hint"></div>
+
+            <form id="dishForm" class="data-form">
+              <input type="hidden" id="dishId">
+              <div class="form-group">
+                <label for="dishName">Dish name</label>
+                <input id="dishName" class="form-control" type="text" placeholder="Dal Baati Churma" required>
+              </div>
+              <div class="two-column-fields">
+                <div class="form-group">
+                  <label for="dishCategory">Category</label>
+                  <select id="dishCategory" class="select-control" required>
+                    <option value="Main">Main</option>
+                    <option value="Bread">Bread</option>
+                    <option value="Rice">Rice</option>
+                    <option value="Dessert">Dessert</option>
+                    <option value="Starter">Starter</option>
+                    <option value="Side">Side</option>
+                    <option value="Beverage">Beverage</option>
+                    <option value="Festival">Festival</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="dishSortOrder">Sort order</label>
+                  <input id="dishSortOrder" class="form-control" type="number" min="1" value="10" required>
+                </div>
+              </div>
+              <div class="toggle-row">
+                <label class="toggle-control">
+                  <input id="dishIsJain" type="checkbox">
+                  <span>Jain option</span>
+                </label>
+                <label class="toggle-control">
+                  <input id="dishIsActive" type="checkbox" checked>
+                  <span>Active</span>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Save dish</button>
+                <button class="btn btn-outline" id="dishResetBtn" type="button">New dish</button>
+              </div>
+            </form>
+
+            <form id="ingredientForm" class="data-form hidden">
+              <input type="hidden" id="ingredientId">
+              <div class="form-group">
+                <label for="ingredientName">Ingredient name</label>
+                <input id="ingredientName" class="form-control" type="text" placeholder="Besan" required>
+              </div>
+              <div class="two-column-fields">
+                <div class="form-group">
+                  <label for="ingredientCategory">Category</label>
+                  <select id="ingredientCategory" class="select-control" required>
+                    <option value="Grain">Grain</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Spice">Spice</option>
+                    <option value="Vegetable">Vegetable</option>
+                    <option value="Oil">Oil</option>
+                    <option value="Sweetener">Sweetener</option>
+                    <option value="Pulse">Pulse</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ingredientUnit">Base unit</label>
+                  <select id="ingredientUnit" class="select-control" required>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="litre">litre</option>
+                    <option value="ml">ml</option>
+                    <option value="piece">piece</option>
+                    <option value="pack">pack</option>
+                  </select>
+                </div>
+              </div>
+              <div class="toggle-row">
+                <label class="toggle-control">
+                  <input id="ingredientIsActive" type="checkbox" checked>
+                  <span>Active</span>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Save ingredient</button>
+                <button class="btn btn-outline" id="ingredientResetBtn" type="button">New ingredient</button>
+              </div>
+            </form>
+
+            <form id="vendorForm" class="data-form hidden">
+              <input type="hidden" id="vendorId">
+              <div class="form-group">
+                <label for="vendorName">Vendor name</label>
+                <input id="vendorName" class="form-control" type="text" placeholder="Sharma Dairy" required>
+              </div>
+              <div class="two-column-fields">
+                <div class="form-group">
+                  <label for="vendorContactName">Contact name</label>
+                  <input id="vendorContactName" class="form-control" type="text" placeholder="Rakesh Sharma">
+                </div>
+                <div class="form-group">
+                  <label for="vendorPhone">Phone</label>
+                  <input id="vendorPhone" class="form-control" type="text" placeholder="+91 98XXXXXXXX">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="vendorNotes">Notes</label>
+                <textarea id="vendorNotes" class="form-control text-area-control" rows="4" placeholder="Milk supplier, early morning delivery"></textarea>
+              </div>
+              <div class="toggle-row">
+                <label class="toggle-control">
+                  <input id="vendorIsActive" type="checkbox" checked>
+                  <span>Active</span>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Save vendor</button>
+                <button class="btn btn-outline" id="vendorResetBtn" type="button">New vendor</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="master-data.js?v=1"></script>
+</body>
+</html>

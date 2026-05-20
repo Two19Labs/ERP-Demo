@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghoomar Thali ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">Ghoomar Thali ERP</p>
+      <h1>Tomorrow's thali plan, outlet by outlet</h1>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a class="nav-item nav-link" href="master-data.html">Master Data</a>
+      <a class="nav-item nav-item-active nav-link" href="dashboard.html">Menu Planner</a>
+      <button class="nav-item" type="button" disabled>Procurement</button>
+      <button class="nav-item" type="button" disabled>Bookings</button>
+      <button class="nav-item" type="button" disabled>Billing</button>
+      <button class="nav-item" type="button" disabled>HQ Dashboard</button>
+    </nav>
+
+    <div class="sidebar-note">
+      <p class="note-label">Current goal</p>
+      <p id="sidebarScope">Plan tomorrow's menu from the shared dish master, then reuse yesterday when it saves time.</p>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Phase 2</p>
+        <h2>Daily Menu Planner</h2>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <span id="userEmail"></span>
+          <span id="userRole" class="role-pill"></span>
+        </div>
+        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="content-main">
+      <section class="hero-panel">
+        <div>
+          <p class="eyebrow">Tomorrow workflow</p>
+          <h3 id="welcomeTitle">Loading menu planner</h3>
+          <p id="welcomeText" class="supporting-text">We are checking your outlet access and loading the shared dish list.</p>
+        </div>
+
+        <div class="hero-controls hero-controls-stack">
+          <label class="selector-wrap" for="menuDate">
+            <span>Menu date</span>
+            <input id="menuDate" class="form-control" type="date">
+          </label>
+          <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
+            <span>Planning outlet</span>
+            <select id="outletSelector" class="select-control"></select>
+          </label>
+          <div id="managerOutletBadge" class="manager-badge hidden"></div>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <article class="status-card">
+          <p class="card-label">Selected dishes</p>
+          <strong id="selectedCountValue">0</strong>
+          <span>Count for the menu currently being planned.</span>
+        </article>
+        <article class="status-card">
+          <p class="card-label">Yesterday's menu</p>
+          <strong id="yesterdayCountValue">0</strong>
+          <span>Use it as a quick starting point and tweak as needed.</span>
+        </article>
+        <article class="status-card">
+          <p class="card-label">HQ overview</p>
+          <strong id="overviewCountValue">0</strong>
+          <span>How many outlet menus exist for the selected date.</span>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header panel-header-spread">
+          <div>
+            <p class="eyebrow">Planning workspace</p>
+            <h3>Build tomorrow's menu</h3>
+          </div>
+          <div id="workspaceBadge" class="mini-badge">Loading access</div>
+        </div>
+
+        <div id="setupAlert" class="setup-alert hidden"></div>
+
+        <div class="planner-grid">
+          <section class="panel panel-soft">
+            <div class="panel-header panel-header-spread">
+              <div>
+                <p class="eyebrow">Dish master</p>
+                <h3>Available dishes</h3>
+              </div>
+              <button id="copyYesterdayBtn" class="btn btn-outline" type="button">Copy yesterday</button>
+            </div>
+            <div id="dishPicker" class="dish-picker">
+              <p class="summary-empty">Loading dishes.</p>
+            </div>
+          </section>
+
+          <section class="panel panel-soft">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Selected menu</p>
+                <h3 id="selectedOutletTitle">Outlet menu</h3>
+              </div>
+            </div>
+
+            <div class="selection-actions">
+              <button id="saveMenuBtn" class="btn btn-primary" type="button">Save menu</button>
+              <button id="clearMenuBtn" class="btn btn-outline" type="button">Clear</button>
+            </div>
+
+            <div id="saveFeedback" class="inline-feedback hidden"></div>
+            <div id="selectedMenuList" class="selected-stack">
+              <p class="summary-empty">No dishes selected yet.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="overview-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">HQ view</p>
+              <h3>All outlet menus for this date</h3>
+            </div>
+          </div>
+          <div id="overviewGrid" class="outlet-overview-grid">
+            <p class="summary-empty">Loading outlet overview.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Public feed</p>
+              <h3>Website-ready endpoint</h3>
+            </div>
+          </div>
+          <div class="api-card">
+            <p>The Phase 2 SQL creates a public view named <code>public_daily_menu_view</code>.</p>
+            <p>That gives the menu site a read-only menu feed without exposing internal manager fields.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=5"></script>
+</body>
+</html>
