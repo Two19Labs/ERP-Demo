@@ -850,14 +850,34 @@ body {
   .topbar,
   .content-main,
   .sidebar {
-    padding-left: 18px;
-    padding-right: 18px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .sidebar {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .topbar {
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 
   .auth-box h1,
   .hero-panel h3,
   .brand-block h1 {
-    font-size: 1.9rem;
+    font-size: 1.7rem;
+  }
+
+  .status-card strong {
+    font-size: 1.35rem;
+  }
+
+  .panel,
+  .status-card,
+  .hero-panel {
+    padding: 16px;
   }
 
   .selector-wrap,
@@ -875,6 +895,24 @@ body {
   .record-main {
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .bill-items-table {
+    min-width: 500px;
+  }
+
+  .record-card {
+    padding: 12px;
   }
 }
 
