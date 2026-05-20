@@ -392,8 +392,15 @@ function parseWhatsAppText(text, vendors, stockItems) {
   // 5. Scan for Items using the new Natural Language Parser
   const itemLines = lines.filter(line => {
     const lower = line.toLowerCase();
-    if (lower.includes("total") || lower.includes("grand total") || lower.includes("invoice") || lower.includes("bill no")) {
-      return false;
+    const hasKeywords = ["total", "grand total", "invoice", "bill no", "bill number", "inv no"].some(k => lower.includes(k));
+    if (hasKeywords) {
+      const hasStockItem = stockItems.some(si => {
+        const name = si.name.toLowerCase();
+        return lower.includes(name) || (name.endsWith('s') && lower.includes(name.slice(0, -1)));
+      });
+      if (!hasStockItem) {
+        return false;
+      }
     }
     if (result.vendorId) {
       const vendor = vendors.find(v => v.id === result.vendorId);
@@ -492,13 +499,20 @@ function parseSingleSegment(segment, stockItems) {
   let totalPrice = null;
   let ratePhrase = "";
   
-  // Rate suffix
+  // Rate suffix with unit, e.g. "10/kg", "10 rs per kilo", "10 rs/kg", "10 per kg"
   const rateSuffixRegex = /(\d+(?:\.\d+)?)\s*(?:rs\.?|rupees?)?\s*(?:\/|per)\s*(?:kg|kilo|litre|ltr|pcs|piece|unit|pkt|pack)\b/i;
   const rateSuffixMatch = segment.match(rateSuffixRegex);
   
+  // Rate suffix without unit, e.g. "100 rs", "100 rupees"
+  const rsSuffixRegex = /(\d+(?:\.\d+)?)\s*(?:rs\.?|rupees?)\b/i;
+  const rsSuffixMatch = segment.match(rsSuffixRegex);
+
   if (rateSuffixMatch) {
     rate = parseFloat(rateSuffixMatch[1]);
     ratePhrase = rateSuffixMatch[0];
+  } else if (rsSuffixMatch) {
+    rate = parseFloat(rsSuffixMatch[1]);
+    ratePhrase = rsSuffixMatch[0];
   } else {
     // Total price suffix (e.g. "= 420", "total 1400", "for 1400 total")
     const totalRegex = /(?:=|\btotal\b|\bsum\b)\s*(\d+(?:\.\d+)?)\b/i;
