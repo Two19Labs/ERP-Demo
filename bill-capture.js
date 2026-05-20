@@ -1,7 +1,5 @@
 const SUPABASE_URL = "https://xbaihdutmydielypymlv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_H5hfJElwUFl-yJR35qtc2w_Fz2MfZRU";
-const HF_DEFAULT_API_KEY = "";
-
 const appState = {
   profile: null,
   records: {
@@ -11,8 +9,7 @@ const appState = {
   currentDraft: null,
   activeTab: "paste",
   uploadedFile: null,
-  uploadUrl: null,
-  hfApiKey: null
+  uploadUrl: null
 };
 
 let supabaseClient;
@@ -266,20 +263,6 @@ async function loadCaptureMasterData() {
     .eq("is_active", true)
     .order("name", { ascending: true });
 
-  // Fetch the HF API Key from Supabase config
-  try {
-    const { data: configData } = await supabaseClient
-      .from("system_config")
-      .select("value")
-      .eq("key", "hf_api_key")
-      .maybeSingle();
-
-    if (configData) {
-      appState.hfApiKey = configData.value;
-    }
-  } catch (configError) {
-    console.warn("Failed to load hf_api_key from Supabase system_config table:", configError);
-  }
 
   appState.records.stock_items = stockItems || [];
   appState.records.vendors = vendors || [];
@@ -668,76 +651,25 @@ function parseSingleSegment(segment, stockItems) {
   };
 }
 
-async function parseTextWithLLM(text, vendors, stockItems, apiKey) {
-  const vendorsList = vendors.map(v => `ID: "${v.id}", Name: "${v.name}"`).join("\n");
-  const stockItemsList = stockItems.map(si => `ID: "${si.id}", Name: "${si.name}"`).join("\n");
-
-  const systemPrompt = `You are a structured invoice data extractor. Convert the raw invoice/bill text into a JSON object matching this schema exactly:
-{
-  "vendorId": "string (matching vendor ID from the list, or empty string)",
-  "billNumber": "string (invoice/bill number, or empty)",
-  "billDate": "string (YYYY-MM-DD format, defaults to today's date)",
-  "parsedTotal": "number or null",
-  "items": [
-    {
-      "rawName": "string (raw product name)",
-      "quantity": "number (default 1)",
-      "unit": "string (standardized 'kg', 'litre', or 'pieces')",
-      "unitPrice": "number (unit rate)",
-      "lineTotal": "number (line total)"
+async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
+  const { data, error } = await supabaseClient.functions.invoke('parse-bill', {
+    body: {
+      text,
+      vendors,
+      stockItems,
+      customApiKey: customApiKey || null
     }
-  ]
-}
-
-Available Vendors:
-${vendorsList}
-
-Available Stock Items:
-${stockItemsList}
-
-Rules:
-1. Output ONLY the JSON block. Do not include markdown code block syntax (like \`\`\`json) or any explanations.
-2. Select the vendor ID by mapping the mention in the text to the nearest available vendor.
-3. Keep units standardized ('kg', 'litre', or 'pieces').`;
-
-  const response = await fetch("https://api-inference.huggingface.co/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey.trim()}`
-    },
-    body: JSON.stringify({
-      model: "Qwen/Qwen2.5-7B-Instruct",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Extract details from:\n${text}` }
-      ],
-      max_tokens: 1024,
-      temperature: 0.1
-    })
   });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`HF API Error: ${response.status} - ${errText}`);
+  if (error) {
+    throw new Error(`Edge Function: ${error.message || error}`);
   }
 
-  const resData = await response.json();
-  let generatedText = resData.choices[0].message.content;
-
-  generatedText = generatedText.trim();
-  // Strip code block wrappers if any
-  if (generatedText.startsWith("```json")) {
-    generatedText = generatedText.substring(7);
-  } else if (generatedText.startsWith("```")) {
-    generatedText = generatedText.substring(3);
+  if (data && data.error) {
+    throw new Error(data.error);
   }
-  if (generatedText.endsWith("```")) {
-    generatedText = generatedText.substring(0, generatedText.length - 3);
-  }
-  generatedText = generatedText.trim();
 
-  const parsedResult = JSON.parse(generatedText);
+  const parsedResult = data;
   
   if (Array.isArray(parsedResult.items)) {
     parsedResult.items.forEach(item => {
@@ -768,23 +700,19 @@ async function handleParseText() {
   parseBtn.disabled = true;
   parseBtn.textContent = "Parsing (AI)...";
 
-  const apiKey = localStorage.getItem("hf_api_key") || appState.hfApiKey || HF_DEFAULT_API_KEY;
+  const customApiKey = localStorage.getItem("hf_api_key");
 
   let parsed = null;
-  if (apiKey) {
-    try {
-      parsed = await parseTextWithLLM(text, appState.records.vendors, appState.records.stock_items, apiKey);
-      if (window.showToast) {
-        window.showToast("Successfully parsed using Hugging Face LLM!", "success");
-      }
-    } catch (err) {
-      console.warn("LLM parsing failed. Falling back to local heuristic parser.", err);
-      if (window.showToast) {
-        window.showToast(`AI parser failed: ${err.message || err}. Falling back to local parser.`, "error");
-      }
-      parsed = parseWhatsAppText(text, appState.records.vendors, appState.records.stock_items);
+  try {
+    parsed = await parseTextWithLLM(text, appState.records.vendors, appState.records.stock_items, customApiKey);
+    if (window.showToast) {
+      window.showToast("Successfully parsed using Hugging Face LLM!", "success");
     }
-  } else {
+  } catch (err) {
+    console.warn("LLM parsing failed. Falling back to local heuristic parser.", err);
+    if (window.showToast) {
+      window.showToast(`AI parser failed: ${err.message || err}. Falling back to local parser.`, "error");
+    }
     parsed = parseWhatsAppText(text, appState.records.vendors, appState.records.stock_items);
   }
 
