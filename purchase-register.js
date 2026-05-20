@@ -604,6 +604,12 @@ function renderOverviewGrid() {
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
             <span class="record-pill ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">${statusText}</span>
+            ${appState.profile?.role_code === 'owner' && bill.status === 'pending_review' ? `
+              <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <button class="btn btn-outline" style="font-size: 0.75rem; padding: 4px 10px; height: auto; border-color: var(--danger-color); color: var(--danger-color);" onclick="window.actionBill('${bill.id}', 'rejected')">Reject</button>
+                <button class="btn btn-primary" style="font-size: 0.75rem; padding: 4px 10px; height: auto;" onclick="window.actionBill('${bill.id}', 'approved')">Approve</button>
+              </div>
+            ` : ''}
             ${appState.profile?.role_code === 'owner' ? `<button class="btn btn-danger" style="font-size: 0.75rem; padding: 4px 10px; height: auto;" onclick="window.showBillDeleteModal('${bill.id}', '${bill.vendors?.name || 'Unknown'}', '${billRef}')">Delete</button>` : ''}
           </div>
         </div>
@@ -694,3 +700,29 @@ async function executeGlobalDelete() {
   }
   hideDeleteModal();
 }
+
+window.actionBill = async function(billId, newStatus) {
+  if (appState.profile?.role_code !== "owner") return;
+
+  try {
+    const payload = {
+      status: newStatus,
+      approved_by: newStatus === "approved" ? appState.profile.id : null,
+      approved_at: newStatus === "approved" ? new Date().toISOString() : null
+    };
+
+    const { error } = await supabaseClient
+      .from("purchase_bills")
+      .update(payload)
+      .eq("id", billId);
+
+    if (error) throw error;
+
+    const msg = newStatus === "approved" ? "Bill approved! Stock ledger updated." : "Bill rejected.";
+    window.showToast?.(msg, "success");
+    await loadRegisterData();
+    await loadActiveAlertsBadge();
+  } catch (err) {
+    alert(`Failed to update bill: ${err.message}`);
+  }
+};
