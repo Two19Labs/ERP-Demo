@@ -91,9 +91,19 @@ Rules:
 1. Output ONLY the JSON block. Do not include markdown code block syntax (like \`\`\`json) or any explanations.
 2. Select the vendor ID by mapping the mention to the nearest available vendor.
 3. Keep units standardized ('kg', 'litre', or 'pieces').
-4. Each row has three numbers: QTY, RATE (per-unit price), and AMOUNT (line total). Map RATE to "unitPrice" and AMOUNT to "lineTotal" — never swap them.
-5. "unitPrice" is the price for ONE unit. If a row shows "2 kg" at "₹30/kg" for "₹60.00", then quantity=2, unitPrice=30, lineTotal=60. It must always hold that unitPrice = lineTotal / quantity.
-6. Strip currency symbols and unit suffixes from numbers (e.g. "₹30/kg" -> 30, "₹60.00" -> 60).`;
+4. COPY each number directly from its column. NEVER multiply, add, or calculate any value. Just read what is printed.
+5. "unitPrice" = the RATE column = the price for ONE single unit. A value written as "₹30/kg" or "30/kg" or "₹25/pkt" means the unitPrice is the number BEFORE the slash (30, 30, 25). The "/kg" or "/pkt" suffix is your signal that this number is already per-unit — use it as-is, do NOT multiply it by the quantity.
+6. "lineTotal" = the AMOUNT column = the total for that row, copied directly.
+7. Strip currency symbols and unit suffixes from numbers (e.g. "₹30/kg" -> 30, "₹60.00" -> 60).
+
+WORKED EXAMPLE — input row:
+  Potato        2 kg      ₹30/kg     ₹60.00
+Correct item: {"rawName":"Potato","quantity":2,"unit":"kg","unitPrice":30,"lineTotal":60}
+WRONG (do not do this): unitPrice 60 — that is 30×2, a calculation. unitPrice must stay 30, the per-kg rate.
+
+Another row:
+  Sugar Packets 3 pkt     ₹25/pkt    ₹75.00
+Correct item: {"rawName":"Sugar Packets","quantity":3,"unit":"pieces","unitPrice":25,"lineTotal":75}`;
 
     // Build the user message: an image content block, or plain text.
     let userContent: any;
