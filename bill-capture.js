@@ -1404,9 +1404,9 @@ async function handleOcrExtraction() {
     form.classList.remove("hidden");
 
     // Populate input fields
-    document.getElementById("extractedVendorId").value = mockData.vendorId;
-    document.getElementById("extractedBillNumber").value = mockData.billNumber;
-    document.getElementById("extractedBillDate").value = mockData.billDate;
+    document.getElementById("extractedVendorId").value = appState.currentDraft.vendorId;
+    document.getElementById("extractedBillNumber").value = appState.currentDraft.billNumber;
+    document.getElementById("extractedBillDate").value = appState.currentDraft.billDate;
 
     // Render items list
     renderExtractedLinesTable();
