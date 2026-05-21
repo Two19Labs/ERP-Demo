@@ -781,8 +781,8 @@ async function invokeParseBill(body, stockItems) {
       item.lineTotal = parseFloat(item.lineTotal) || 0;
     });
 
-    // Ground-truth pass: when the bill text writes a rate as "<n>/kg", "<n>/pkt"
-    // etc., that number IS the per-unit price — no AI guessing needed. Trust it.
+    // Ground-truth pass: pull explicit "<n>/kg", "<n>/pkt" rate tokens from
+    // the bill text — those numbers ARE the per-unit price, no AI guessing.
     const rawText = body && body.text ? String(body.text) : "";
     const rateMatches = [...rawText.matchAll(
       /(\d+(?:\.\d+)?)\s*\/\s*(kgs?|gms?|grams?|g|l|ltrs?|lit(?:re|er)s?|pcs?|pkts?|pieces?|units?|dozens?|nos?)\b/gi
@@ -792,20 +792,51 @@ async function invokeParseBill(body, stockItems) {
     const useRateTokens = rateMatches.length > 0 &&
       rateMatches.length === parsedResult.items.length;
 
+    // --- OCR currency-glyph correction ------------------------------------
+    // Tesseract has no "₹" glyph, so it misreads the rupee sign as a leading
+    // digit (commonly "3"): a printed "₹30" arrives as "330", "₹60.00" as
+    // "360.00". The misread is consistent across the whole bill, so detect it
+    // on rows where quantity ≠ 1 (there qty × rate = total is unambiguous),
+    // then strip the bogus leading digit from every row.
+    const stripLead = (n) => {
+      const whole = Math.trunc(Math.abs(n));
+      const s = String(whole);
+      if (s.length < 2) return null;
+      return parseFloat(s.slice(1)) + (Math.abs(n) - whole);
+    };
+    const balances = (q, r, t) => q > 0 && t > 0 && Math.abs(q * r - t) < 0.5;
+
+    let glyphCorrupted = false;
     parsedResult.items.forEach((item, i) => {
-      if (useRateTokens) {
-        // The per-unit rate from the bill text overrides the AI's value.
-        item.unitPrice = rateMatches[i];
-        item.lineTotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
-      } else if (item.quantity > 0 && item.lineTotal > 0) {
-        // No reliable "/unit" rate token (OCR mangles the small "/kg" text).
-        // The AMOUNT and QTY columns OCR far more reliably than the rate, and
-        // AMOUNT = QTY × RATE always holds — so derive the per-unit price
-        // from them instead of trusting the AI's guessed rate.
-        item.unitPrice = Math.round((item.lineTotal / item.quantity) * 100) / 100;
-      } else if (item.lineTotal <= 0 && item.quantity > 0 && item.unitPrice > 0) {
-        // Neither a rate token nor a line total: fall back to the AI's rate.
-        item.lineTotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
+      if (!(item.quantity > 1)) return; // qty 1 (or 0) can't disambiguate
+      const rate = useRateTokens ? rateMatches[i] : item.unitPrice;
+      const total = item.lineTotal;
+      if (balances(item.quantity, rate, total)) return; // already consistent
+      const sr = stripLead(rate), st = stripLead(total);
+      if (sr != null && st != null && balances(item.quantity, sr, st)) {
+        glyphCorrupted = true;
+      }
+    });
+
+    parsedResult.items.forEach((item, i) => {
+      let rate = useRateTokens ? rateMatches[i] : item.unitPrice;
+      let total = item.lineTotal;
+
+      if (glyphCorrupted) {
+        const sr = stripLead(rate), st = stripLead(total);
+        if (sr != null) rate = sr;
+        if (st != null) total = st;
+      }
+
+      if (item.quantity > 0 && total > 0) {
+        // AMOUNT and QTY OCR far more reliably than the small rate text, and
+        // AMOUNT = QTY × RATE always holds — derive the per-unit price.
+        item.lineTotal = total;
+        item.unitPrice = Math.round((total / item.quantity) * 100) / 100;
+      } else if (rate > 0 && item.quantity > 0) {
+        // No usable line total: fall back to the rate token / AI rate.
+        item.unitPrice = rate;
+        item.lineTotal = Math.round((item.quantity * rate) * 100) / 100;
       }
     });
   } else {
