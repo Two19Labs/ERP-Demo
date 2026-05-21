@@ -222,6 +222,18 @@ Total 3200"></textarea>
               </div>
             </div>
 
+            <!-- Collapsible OCR Debug Panel -->
+            <div id="ocrDebugCard" class="visual-attachment-card hidden" style="margin-top: 10px;">
+              <div class="visual-attachment-header" id="toggleOcrDebugBtn">
+                <span class="visual-attachment-title">🔍 OCR Text: What the AI Actually Read</span>
+                <span class="visual-attachment-chevron">▼</span>
+              </div>
+              <div id="ocrDebugContent" class="visual-attachment-content hidden">
+                <textarea id="ocrDebugText" readonly rows="10" class="form-control"
+                  style="width: 100%; font-family: monospace; font-size: 0.8rem; white-space: pre; resize: vertical;"></textarea>
+              </div>
+            </div>
+
             <div class="form-group" style="margin-top: 15px;">
               <label for="extractedVendorId">Vendor <span class="required">*</span></label>
               <select id="extractedVendorId" class="select-control" required>

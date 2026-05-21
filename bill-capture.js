@@ -210,6 +210,14 @@ Total 3200`;
     }
   });
 
+  // OCR Debug collapsible panel toggle
+  document.getElementById("toggleOcrDebugBtn")?.addEventListener("click", (e) => {
+    const content = document.getElementById("ocrDebugContent");
+    const isHidden = content.classList.toggle("hidden");
+    const chev = e.currentTarget.querySelector(".visual-attachment-chevron");
+    if (chev) chev.textContent = isHidden ? "▼" : "▲";
+  });
+
   // Speech-to-Text handler
   const voiceBtn = document.getElementById("voiceInputBtn");
   const voiceBtnText = document.getElementById("voiceBtnText");
@@ -1362,12 +1370,12 @@ async function handleOcrExtraction() {
     setStep("stepAnalyze", "⏳", true, false);
 
     let parsedResult = null;
+    let extractedText = "";
     const customApiKey = localStorage.getItem("hf_api_key");
 
     if (isImage) {
       // Step 2: OCR the image to plain text in the browser (Tesseract).
       setStep("stepAnalyze", "⏳ Reading text...", true, false);
-      let extractedText = "";
       try {
         const result = await Tesseract.recognize(file, 'eng', {
           logger: m => {
@@ -1443,6 +1451,18 @@ async function handleOcrExtraction() {
     
     const form = document.getElementById("extractedBillForm");
     form.classList.remove("hidden");
+
+    // Surface the raw OCR text so the rate/parsing errors are inspectable.
+    const ocrDebugCard = document.getElementById("ocrDebugCard");
+    const ocrDebugText = document.getElementById("ocrDebugText");
+    if (ocrDebugCard && ocrDebugText) {
+      if (isImage && extractedText) {
+        ocrDebugText.value = extractedText;
+        ocrDebugCard.classList.remove("hidden");
+      } else {
+        ocrDebugCard.classList.add("hidden");
+      }
+    }
 
     // Populate input fields
     document.getElementById("extractedVendorId").value = appState.currentDraft.vendorId;
