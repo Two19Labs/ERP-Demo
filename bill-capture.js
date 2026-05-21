@@ -789,8 +789,14 @@ async function invokeParseBill(body, stockItems) {
         // The per-unit rate from the bill text overrides the AI's value.
         item.unitPrice = rateMatches[i];
         item.lineTotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
+      } else if (item.quantity > 0 && item.lineTotal > 0) {
+        // No reliable "/unit" rate token (OCR mangles the small "/kg" text).
+        // The AMOUNT and QTY columns OCR far more reliably than the rate, and
+        // AMOUNT = QTY × RATE always holds — so derive the per-unit price
+        // from them instead of trusting the AI's guessed rate.
+        item.unitPrice = Math.round((item.lineTotal / item.quantity) * 100) / 100;
       } else if (item.lineTotal <= 0 && item.quantity > 0 && item.unitPrice > 0) {
-        // No explicit per-unit notation: only fill in a missing line total.
+        // Neither a rate token nor a line total: fall back to the AI's rate.
         item.lineTotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
       }
     });
