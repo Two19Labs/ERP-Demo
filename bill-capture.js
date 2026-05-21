@@ -771,14 +771,27 @@ async function invokeParseBill(body, stockItems) {
       item.quantity = parseFloat(item.quantity) || 1;
       item.unitPrice = parseFloat(item.unitPrice) || 0;
       item.lineTotal = parseFloat(item.lineTotal) || 0;
+    });
 
-      // Reconcile quantity / unitPrice / lineTotal so the per-unit price is consistent.
-      // The line amount and quantity are read most reliably, so derive the unit price
-      // from them whenever both are available (fixes the AI swapping rate vs amount).
-      if (item.lineTotal > 0 && item.quantity > 0) {
-        item.unitPrice = Math.round((item.lineTotal / item.quantity) * 100) / 100;
-      } else if (item.unitPrice > 0 && item.quantity > 0) {
-        item.lineTotal = Math.round((item.unitPrice * item.quantity) * 100) / 100;
+    // Ground-truth pass: when the bill text writes a rate as "<n>/kg", "<n>/pkt"
+    // etc., that number IS the per-unit price — no AI guessing needed. Trust it.
+    const rawText = body && body.text ? String(body.text) : "";
+    const rateMatches = [...rawText.matchAll(
+      /(\d+(?:\.\d+)?)\s*\/\s*(kgs?|gms?|grams?|g|l|ltrs?|lit(?:re|er)s?|pcs?|pkts?|pieces?|units?|dozens?|nos?)\b/gi
+    )].map(m => parseFloat(m[1]));
+
+    // If the count of "/unit" rates matches the line items, they line up in order.
+    const useRateTokens = rateMatches.length > 0 &&
+      rateMatches.length === parsedResult.items.length;
+
+    parsedResult.items.forEach((item, i) => {
+      if (useRateTokens) {
+        // The per-unit rate from the bill text overrides the AI's value.
+        item.unitPrice = rateMatches[i];
+        item.lineTotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
+      } else if (item.lineTotal <= 0 && item.quantity > 0 && item.unitPrice > 0) {
+        // No explicit per-unit notation: only fill in a missing line total.
+        item.lineTotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
       }
     });
   } else {
