@@ -736,23 +736,18 @@ function parseSingleSegment(segment, stockItems) {
   };
 }
 
-async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
-  const { data, error } = await supabaseClient.functions.invoke('parse-bill', {
-    body: {
-      text,
-      vendors,
-      stockItems,
-      customApiKey: customApiKey || null
-    }
-  });
+// Core invoker: sends a body to the parse-bill edge function and normalizes the result.
+// The body may contain `text` (WhatsApp paste) or `imageUrl` (backend OCR of an uploaded image).
+async function invokeParseBill(body, stockItems) {
+  const { data, error } = await supabaseClient.functions.invoke('parse-bill', { body });
 
   if (error) {
     let errMsg = error.message || error;
     if (error.context && typeof error.context.json === 'function') {
       try {
-        const body = await error.context.json();
-        if (body && body.error) {
-          errMsg = body.error;
+        const errBody = await error.context.json();
+        if (errBody && errBody.error) {
+          errMsg = errBody.error;
         }
       } catch (e) {
         try {
@@ -769,7 +764,7 @@ async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
   }
 
   const parsedResult = data;
-  
+
   if (Array.isArray(parsedResult.items)) {
     parsedResult.items.forEach(item => {
       item.matchedItemId = fuzzyMatchStockItem(item.rawName, stockItems) || "";
@@ -782,6 +777,38 @@ async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
   }
 
   return parsedResult;
+}
+
+// Parse pasted text (WhatsApp bills).
+async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
+  return invokeParseBill(
+    { text, vendors, stockItems, customApiKey: customApiKey || null },
+    stockItems
+  );
+}
+
+// Reads a File into a raw base64 string (without the "data:...;base64," prefix).
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.substring(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Parse an uploaded image: the edge function sends it to a vision model that
+// reads the image directly and extracts the structured data in one call.
+async function parseImageWithVision(file, vendors, stockItems, customApiKey) {
+  const imageBase64 = await fileToBase64(file);
+  return invokeParseBill(
+    { imageBase64, mimeType: file.type, vendors, stockItems, customApiKey: customApiKey || null },
+    stockItems
+  );
 }
 
 async function handleParseText() {
@@ -1330,49 +1357,35 @@ async function handleOcrExtraction() {
     setStep("stepUpload", "✅", false, true);
     setStep("stepAnalyze", "⏳", true, false);
 
-    let extractedText = "";
+    // Step 2 + 3: a backend vision model reads the image and extracts data in one call
+    setStep("stepAnalyze", "⏳ AI vision analysis...", true, false);
+
+    let parsedResult = null;
+    const customApiKey = localStorage.getItem("hf_api_key");
+
     if (isImage) {
-      // Step 2: Running layout structure OCR analysis (Real OCR!)
       try {
-        const result = await Tesseract.recognize(file, 'eng', {
-          logger: m => {
-            if (m.status === 'recognizing text') {
-              const pct = Math.round(m.progress * 100);
-              setStep("stepAnalyze", `⏳ (${pct}%)`, true, false);
-            }
-          }
-        });
-        extractedText = result.data.text;
-      } catch (ocrErr) {
-        console.warn("Tesseract OCR failed, falling back to mock:", ocrErr);
-        const mockData = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
-        extractedText = `Mock fallback text for ${file.name}. Total: ${mockData.parsedTotal}`;
+        parsedResult = await parseImageWithVision(
+          file,
+          appState.records.vendors,
+          appState.records.stock_items,
+          customApiKey
+        );
+      } catch (err) {
+        console.warn("Vision model parsing failed, falling back to mock:", err);
+        if (window.showToast) {
+          window.showToast(`AI parser failed: ${err.message || err}. Using sample data.`, "error");
+        }
+        parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
       }
     } else {
-      // PDF Fallback to Mock
+      // PDF: the vision model handles images only — keep mock fallback for PDFs.
       await new Promise(r => setTimeout(r, 600));
-      const mockData = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
-      extractedText = `PDF Bill. Vendor: ${mockData.vendorId}, Number: ${mockData.billNumber}, Total: ${mockData.parsedTotal}`;
+      parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
     }
 
     setStep("stepAnalyze", "✅", false, true);
     setStep("stepExtract", "⏳", true, false);
-
-    // Step 3: Parsing line item descriptions & prices
-    let parsedResult = null;
-    try {
-      const customApiKey = localStorage.getItem("hf_api_key");
-      parsedResult = await parseTextWithLLM(
-        extractedText,
-        appState.records.vendors,
-        appState.records.stock_items,
-        customApiKey
-      );
-    } catch (llmErr) {
-      console.warn("LLM OCR parsing failed, falling back to heuristic mock:", llmErr);
-      const mockData = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
-      parsedResult = mockData;
-    }
 
     setStep("stepExtract", "✅", false, true);
     setStep("stepMap", "⏳", true, false);

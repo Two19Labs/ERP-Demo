@@ -33,12 +33,17 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization')!
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    
+
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     })
 
-    const { text, vendors, stockItems, customApiKey } = await req.json();
+    const { text, imageBase64, mimeType, vendors, stockItems, customApiKey } = await req.json();
+
+    const isImage = !!imageBase64;
+    if (!isImage && !(text || "").trim()) {
+      throw new Error("No input provided. Send invoice text or an image.");
+    }
 
     let apiKey = customApiKey ? customApiKey.trim() : null;
 
@@ -59,7 +64,7 @@ serve(async (req) => {
     const vendorsList = vendors.map((v: any) => `ID: "${v.id}", Name: "${v.name}"`).join("\n");
     const stockItemsList = stockItems.map((si: any) => `ID: "${si.id}", Name: "${si.name}"`).join("\n");
 
-    const systemPrompt = `You are a structured invoice data extractor. Convert the raw invoice/bill text into a JSON object matching this schema exactly:
+    const systemPrompt = `You are a structured invoice data extractor. Convert the invoice/bill into a JSON object matching this schema exactly:
 {
   "vendorId": "string (matching vendor ID from the list, or empty string)",
   "billNumber": "string (invoice/bill number, or empty)",
@@ -84,10 +89,28 @@ ${stockItemsList}
 
 Rules:
 1. Output ONLY the JSON block. Do not include markdown code block syntax (like \`\`\`json) or any explanations.
-2. Select the vendor ID by mapping the mention in the text to the nearest available vendor.
-3. Keep units standardized ('kg', 'litre', or 'pieces').`;
+2. Select the vendor ID by mapping the mention to the nearest available vendor.
+3. Keep units standardized ('kg', 'litre', or 'pieces').
+4. When reading an image, use the table layout (columns for quantity, rate, amount) to assign values correctly.`;
 
-    // Fetch from Hugging Face Router (Resolves perfectly!)
+    // Vision model for images, text model for pasted text.
+    const model = isImage
+      ? "Qwen/Qwen2.5-VL-7B-Instruct"
+      : "Qwen/Qwen2.5-7B-Instruct";
+
+    // Build the user message: an image content block, or plain text.
+    let userContent: any;
+    if (isImage) {
+      const dataUri = `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
+      userContent = [
+        { type: "text", text: "Extract the structured invoice details from this image." },
+        { type: "image_url", image_url: { url: dataUri } }
+      ];
+    } else {
+      userContent = `Extract details from:\n${text}`;
+    }
+
+    // Fetch from Hugging Face Router (OpenAI-compatible chat completions API).
     const response = await fetchWithRetry("https://router.huggingface.co/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -95,10 +118,10 @@ Rules:
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "Qwen/Qwen2.5-7B-Instruct",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract details from:\n${text}` }
+          { role: "user", content: userContent }
         ],
         max_tokens: 1024,
         temperature: 0.1
