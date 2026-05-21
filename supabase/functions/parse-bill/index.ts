@@ -73,10 +73,10 @@ serve(async (req) => {
   "items": [
     {
       "rawName": "string (raw product name)",
-      "quantity": "number (default 1)",
+      "quantity": "number (the QTY value, default 1)",
       "unit": "string (standardized 'kg', 'litre', or 'pieces')",
-      "unitPrice": "number (unit rate)",
-      "lineTotal": "number (line total)"
+      "unitPrice": "number (the per-unit RATE, e.g. 30 from '₹30/kg' — NOT the line amount)",
+      "lineTotal": "number (the AMOUNT for the row = quantity × unitPrice)"
     }
   ]
 }
@@ -91,7 +91,9 @@ Rules:
 1. Output ONLY the JSON block. Do not include markdown code block syntax (like \`\`\`json) or any explanations.
 2. Select the vendor ID by mapping the mention to the nearest available vendor.
 3. Keep units standardized ('kg', 'litre', or 'pieces').
-4. When reading an image, use the table layout (columns for quantity, rate, amount) to assign values correctly.`;
+4. Each row has three numbers: QTY, RATE (per-unit price), and AMOUNT (line total). Map RATE to "unitPrice" and AMOUNT to "lineTotal" — never swap them.
+5. "unitPrice" is the price for ONE unit. If a row shows "2 kg" at "₹30/kg" for "₹60.00", then quantity=2, unitPrice=30, lineTotal=60. It must always hold that unitPrice = lineTotal / quantity.
+6. Strip currency symbols and unit suffixes from numbers (e.g. "₹30/kg" -> 30, "₹60.00" -> 60).`;
 
     // Build the user message: an image content block, or plain text.
     let userContent: any;

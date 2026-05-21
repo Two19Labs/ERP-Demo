@@ -770,7 +770,16 @@ async function invokeParseBill(body, stockItems) {
       item.matchedItemId = fuzzyMatchStockItem(item.rawName, stockItems) || "";
       item.quantity = parseFloat(item.quantity) || 1;
       item.unitPrice = parseFloat(item.unitPrice) || 0;
-      item.lineTotal = parseFloat(item.lineTotal) || (item.quantity * item.unitPrice);
+      item.lineTotal = parseFloat(item.lineTotal) || 0;
+
+      // Reconcile quantity / unitPrice / lineTotal so the per-unit price is consistent.
+      // The line amount and quantity are read most reliably, so derive the unit price
+      // from them whenever both are available (fixes the AI swapping rate vs amount).
+      if (item.lineTotal > 0 && item.quantity > 0) {
+        item.unitPrice = Math.round((item.lineTotal / item.quantity) * 100) / 100;
+      } else if (item.unitPrice > 0 && item.quantity > 0) {
+        item.lineTotal = Math.round((item.unitPrice * item.quantity) * 100) / 100;
+      }
     });
   } else {
     parsedResult.items = [];
