@@ -93,11 +93,6 @@ Rules:
 3. Keep units standardized ('kg', 'litre', or 'pieces').
 4. When reading an image, use the table layout (columns for quantity, rate, amount) to assign values correctly.`;
 
-    // Vision model for images, text model for pasted text.
-    const model = isImage
-      ? "Qwen/Qwen2.5-VL-7B-Instruct"
-      : "Qwen/Qwen2.5-7B-Instruct";
-
     // Build the user message: an image content block, or plain text.
     let userContent: any;
     if (isImage) {
@@ -110,27 +105,56 @@ Rules:
       userContent = `Extract details from:\n${text}`;
     }
 
-    // Fetch from Hugging Face Router (OpenAI-compatible chat completions API).
-    const response = await fetchWithRetry("https://router.huggingface.co/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent }
-        ],
-        max_tokens: 1024,
-        temperature: 0.1
-      })
-    });
+    // Candidate models to try in order. For images we need a vision model;
+    // HF providers vary per account, so we fall through until one is supported.
+    const candidateModels = isImage
+      ? [
+          "Qwen/Qwen2.5-VL-72B-Instruct",
+          "Qwen/Qwen2.5-VL-7B-Instruct",
+          "meta-llama/Llama-3.2-11B-Vision-Instruct",
+          "google/gemma-3-27b-it",
+        ]
+      : ["Qwen/Qwen2.5-7B-Instruct"];
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`HF API Error: ${response.status} - ${errText}`);
+    // Try each candidate model until one succeeds (skip past "unsupported model" errors).
+    let response: Response | null = null;
+    let lastErr = "";
+    for (const model of candidateModels) {
+      const resp = await fetchWithRetry("https://router.huggingface.co/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent }
+          ],
+          max_tokens: 1024,
+          temperature: 0.1
+        })
+      });
+
+      if (resp.ok) {
+        console.log(`Using model: ${model}`);
+        response = resp;
+        break;
+      }
+
+      lastErr = await resp.text();
+      // If the model is simply unsupported on this account, try the next one.
+      if (resp.status === 400 && /not supported by any provider/i.test(lastErr)) {
+        console.warn(`Model ${model} unsupported, trying next...`);
+        continue;
+      }
+      // Any other error (auth, rate limit, etc.) is not fixed by switching models.
+      throw new Error(`HF API Error: ${resp.status} - ${lastErr}`);
+    }
+
+    if (!response) {
+      throw new Error(`No supported vision model found. Last error: ${lastErr}`);
     }
 
     const resData = await response.json();
