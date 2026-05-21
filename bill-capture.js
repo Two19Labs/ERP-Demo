@@ -787,30 +787,6 @@ async function parseTextWithLLM(text, vendors, stockItems, customApiKey) {
   );
 }
 
-// Reads a File into a raw base64 string (without the "data:...;base64," prefix).
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      const comma = result.indexOf(',');
-      resolve(comma >= 0 ? result.substring(comma + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
-}
-
-// Parse an uploaded image: the edge function sends it to a vision model that
-// reads the image directly and extracts the structured data in one call.
-async function parseImageWithVision(file, vendors, stockItems, customApiKey) {
-  const imageBase64 = await fileToBase64(file);
-  return invokeParseBill(
-    { imageBase64, mimeType: file.type, vendors, stockItems, customApiKey: customApiKey || null },
-    stockItems
-  );
-}
-
 async function handleParseText() {
   const text = document.getElementById("rawBillText").value.trim();
   const feedback = document.getElementById("saveFeedback");
@@ -1357,35 +1333,59 @@ async function handleOcrExtraction() {
     setStep("stepUpload", "✅", false, true);
     setStep("stepAnalyze", "⏳", true, false);
 
-    // Step 2 + 3: a backend vision model reads the image and extracts data in one call
-    setStep("stepAnalyze", "⏳ AI vision analysis...", true, false);
-
     let parsedResult = null;
     const customApiKey = localStorage.getItem("hf_api_key");
 
     if (isImage) {
+      // Step 2: OCR the image to plain text in the browser (Tesseract).
+      setStep("stepAnalyze", "⏳ Reading text...", true, false);
+      let extractedText = "";
       try {
-        parsedResult = await parseImageWithVision(
-          file,
-          appState.records.vendors,
-          appState.records.stock_items,
-          customApiKey
-        );
-      } catch (err) {
-        console.warn("Vision model parsing failed, falling back to mock:", err);
+        const result = await Tesseract.recognize(file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round(m.progress * 100);
+              setStep("stepAnalyze", `⏳ Reading text (${pct}%)`, true, false);
+            }
+          }
+        });
+        extractedText = (result.data.text || "").trim();
+      } catch (ocrErr) {
+        console.warn("Tesseract OCR failed:", ocrErr);
+      }
+      setStep("stepAnalyze", "✅", false, true);
+
+      // Step 3: send the OCR text to the AI text parser (same model as paste).
+      setStep("stepExtract", "⏳", true, false);
+      if (extractedText) {
+        try {
+          parsedResult = await parseTextWithLLM(
+            extractedText,
+            appState.records.vendors,
+            appState.records.stock_items,
+            customApiKey
+          );
+        } catch (err) {
+          console.warn("AI text parsing failed, falling back to mock:", err);
+          if (window.showToast) {
+            window.showToast(`AI parser failed: ${err.message || err}. Using sample data.`, "error");
+          }
+          parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
+        }
+      } else {
         if (window.showToast) {
-          window.showToast(`AI parser failed: ${err.message || err}. Using sample data.`, "error");
+          window.showToast("Could not read any text from the image. Using sample data.", "error");
         }
         parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
       }
     } else {
-      // PDF: the vision model handles images only — keep mock fallback for PDFs.
+      // PDF: OCR handles images only — keep mock fallback for PDFs.
+      setStep("stepAnalyze", "⏳", true, false);
       await new Promise(r => setTimeout(r, 600));
       parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
+      setStep("stepAnalyze", "✅", false, true);
+      setStep("stepExtract", "⏳", true, false);
     }
-
-    setStep("stepAnalyze", "✅", false, true);
-    setStep("stepExtract", "⏳", true, false);
 
     setStep("stepExtract", "✅", false, true);
     setStep("stepMap", "⏳", true, false);
