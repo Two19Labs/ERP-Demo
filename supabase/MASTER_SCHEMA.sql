@@ -556,8 +556,10 @@ CREATE POLICY "owners can manage users" ON public.users
 
 -- user_roles
 DROP POLICY IF EXISTS "Allow anyone to read roles" ON public.user_roles;
-CREATE POLICY "Allow anyone to read roles" ON public.user_roles
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "users can read own role row" ON public.user_roles;
+CREATE POLICY "users can read own role row" ON public.user_roles
+  FOR SELECT TO authenticated
+  USING (id = (SELECT auth.uid()) OR private.is_owner());
 
 -- vendors
 DROP POLICY IF EXISTS "active users can read vendors" ON public.vendors;
@@ -634,16 +636,21 @@ CREATE POLICY "owners can delete stock movements" ON public.stock_movements
 -- bill_alerts
 DROP POLICY IF EXISTS "users can read bill alerts" ON public.bill_alerts;
 CREATE POLICY "users can read bill alerts" ON public.bill_alerts
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated
+  USING (private.can_access_bill(purchase_bill_id));
 
 DROP POLICY IF EXISTS "users can update bill alerts" ON public.bill_alerts;
-CREATE POLICY "users can update bill alerts" ON public.bill_alerts
-  FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "owners can update bill alerts" ON public.bill_alerts;
+CREATE POLICY "owners can update bill alerts" ON public.bill_alerts
+  FOR UPDATE TO authenticated
+  USING (private.is_owner())
+  WITH CHECK (private.is_owner());
 
 -- system_config
+-- Secrets (e.g. hf_api_key) live here. No SELECT policy via PostgREST — RLS
+-- denies all reads by anon/authenticated. The edge function reads its secret
+-- from Deno.env, and service_role bypasses RLS for any future admin tooling.
 DROP POLICY IF EXISTS "Allow read access to authenticated users" ON public.system_config;
-CREATE POLICY "Allow read access to authenticated users" ON public.system_config
-  FOR SELECT TO authenticated USING (true);
 
 
 -- =====================================================================

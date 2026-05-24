@@ -1,14 +1,18 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Restaurant Stock Control - Purchase Register</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="app-shell">
   <aside class="sidebar">
     <div class="brand-block">
@@ -17,17 +21,11 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="master-data.html">
-        <span>Stock Setup</span>
-      </a>
       <a class="nav-item nav-link" href="dashboard.html">
         <span>Stock Dashboard</span>
       </a>
-      <a class="nav-item nav-link" href="bill-capture.html">
-        <span>Bill Capture</span>
-      </a>
       <a class="nav-item nav-item-active nav-link" href="purchase-register.html">
-        <span>Purchase Register</span>
+        <span>Purchase Bills</span>
       </a>
       <a class="nav-item nav-link" href="stock-ledger.html">
         <span>Stock Ledger</span>
@@ -35,6 +33,9 @@
       <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
         <span>Alerts</span>
         <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+      </a>
+      <a class="nav-item nav-link" href="master-data.html">
+        <span>Stock Setup</span>
       </a>
     </nav>
 
@@ -63,149 +64,319 @@
     <main class="content-main">
       <section class="hero-panel">
         <div>
-          <p class="eyebrow">Data Entry Workflow</p>
-          <h3 id="welcomeTitle">Record Supplier Bills</h3>
-          <p id="welcomeText" class="supporting-text">Enter new supplier bills or review pending invoices to load items into the stock ledger.</p>
+          <p class="eyebrow">Supplier Invoices</p>
+          <h3 id="welcomeTitle">Purchase Bills</h3>
+          <p id="welcomeText" class="supporting-text">Log supplier deliveries, review pending staff uploads, and audit your purchase history in one central registry.</p>
         </div>
 
-        <div class="hero-controls hero-controls-stack">
-          <label class="selector-wrap" for="menuDate">
-            <span>Filter by Bill Date</span>
-            <input id="menuDate" class="form-control" type="date">
-          </label>
+        <div>
+          <button id="openDeliveryModalBtn" class="btn btn-primary" type="button" style="font-weight: 700; font-size: 1.05rem; padding: 14px 28px; box-shadow: 0 4px 14px rgba(37,111,125,0.3);">
+            ðŸ“¥ Record Delivery (New Purchase)
+          </button>
         </div>
       </section>
 
       <section class="panel">
         <div class="panel-header panel-header-spread">
           <div>
-            <p class="eyebrow">Bill review workspace</p>
-            <h3>Review purchase lines before stock changes</h3>
+            <p class="eyebrow">Audit Console</p>
+            <h3>Bills Registry</h3>
           </div>
           <div id="workspaceBadge" class="mini-badge">Loading access</div>
         </div>
 
         <div id="setupAlert" class="setup-alert hidden"></div>
 
-        <div class="planner-grid">
-          <!-- Left Column: Bill & Item Entry -->
-          <section class="panel panel-soft">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Capture bill items</p>
-                <h3>Bill & line item entry</h3>
+        <!-- Registry Filters -->
+        <div style="background: rgba(255,255,255,0.4); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+          <div style="flex: 1.5; min-width: 200px; display: grid; gap: 6px;">
+            <label for="searchBills" style="font-size: 0.85rem; color: var(--clay); font-weight: 600;">Search Bill / Vendor</label>
+            <input id="searchBills" class="form-control" type="text" placeholder="Type bill # or vendor name...">
+          </div>
+          <div style="flex: 1; min-width: 150px; display: grid; gap: 6px;">
+            <label for="filterVendorSelect" style="font-size: 0.85rem; color: var(--clay); font-weight: 600;">Vendor</label>
+            <select id="filterVendorSelect" class="select-control">
+              <option value="">All Vendors</option>
+            </select>
+          </div>
+          <div style="flex: 1; min-width: 140px; display: grid; gap: 6px;">
+            <label for="menuDate" style="font-size: 0.85rem; color: var(--clay); font-weight: 600;">Filter by Date</label>
+            <div style="display: flex; gap: 6px;">
+              <input id="menuDate" class="form-control" type="date" style="padding: 10px;">
+              <button id="clearDateBtn" class="btn btn-outline" type="button" style="padding: 10px 14px;" title="Clear date filter">&times;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-strip" role="tablist" style="margin-bottom: 15px;">
+          <button class="tab-button tab-button-active" id="filterStatusAll" data-status="all" type="button">All Bills</button>
+          <button class="tab-button" id="filterStatusPending" data-status="pending_review" type="button">Pending Review</button>
+          <button class="tab-button" id="filterStatusApproved" data-status="approved" type="button">Approved</button>
+          <button class="tab-button" id="filterStatusRejected" data-status="rejected" type="button">Rejected</button>
+        </div>
+
+        <div class="bill-items-table-container" style="overflow-x: auto;">
+          <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+                <th style="padding: 12px 8px;">Date</th>
+                <th style="padding: 12px 8px;">Bill Number</th>
+                <th style="padding: 12px 8px;">Vendor</th>
+                <th style="padding: 12px 8px; text-align: right;">Total Amount</th>
+                <th style="padding: 12px 8px; text-align: center;">Status</th>
+                <th style="padding: 12px 8px; text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="billsRegistryBody">
+              <tr>
+                <td colspan="6" class="summary-empty" style="text-align: center; padding: 40px 10px;">Loading bills...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Record Delivery Wizard Modal -->
+  <div id="recordDeliveryModal" class="modal-overlay hidden">
+    <div class="modal-content animate-fade" style="max-width: 900px; width: 95%;">
+      <div class="modal-header">
+        <h4 id="wizardTitle">Record Supplier Delivery</h4>
+        <button id="closeDeliveryModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
+      </div>
+      
+      <div style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+        
+        <!-- Step 1: Input Method Selection -->
+        <div id="wizardStep1" class="wizard-step">
+          <p class="eyebrow" style="margin-bottom: 12px;">Step 1: Choose Entry Method</p>
+          <div class="capture-tabs" style="margin-bottom: 20px; display: flex; gap: 8px;">
+            <button id="wizardTabWhatsApp" class="capture-tab capture-tab-active" style="flex: 1; padding: 12px; font-weight: 600; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); cursor: pointer;" type="button">ðŸ’¬ WhatsApp Paste</button>
+            <button id="wizardTabOcr" class="capture-tab" style="flex: 1; padding: 12px; font-weight: 600; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); cursor: pointer;" type="button">ðŸ“· Upload Bill (OCR)</button>
+            <button id="wizardTabManual" class="capture-tab" style="flex: 1; padding: 12px; font-weight: 600; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); cursor: pointer;" type="button">âœï¸ Manual Entry Form</button>
+          </div>
+          
+          <!-- Method A: WhatsApp Paste -->
+          <div id="methodWhatsApp" class="method-workspace">
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="wizardRawText" style="margin-bottom: 0;">Paste WhatsApp Chat Message or Supplier Text <span class="required">*</span></label>
+                <button id="wizardVoiceBtn" class="btn btn-outline btn-small" type="button" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 0.8rem; border-radius: 20px;">
+                  <span id="wizardMicIcon">ðŸŽ¤</span> <span id="wizardVoiceBtnText">Voice Input</span>
+                </button>
+              </div>
+              <textarea id="wizardRawText" class="form-control text-area-control" style="min-height: 180px; font-family: monospace; font-size: 0.9rem;" placeholder="Paste text here... e.g.:
+Fresh Market Supplier
+Tomato 10 kg x 42 = 420
+Onion 8 kg x 30 = 240
+Paneer 5 kg for 1400 total
+Total 2060"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 15px;">
+              <div style="display: flex; gap: 8px;">
+                <button id="wizardDemoBtn1" class="btn btn-outline btn-small" type="button">Load WhatsApp Demo</button>
+                <button id="wizardDemoBtn2" class="btn btn-outline btn-small" type="button">Load Alternative Demo</button>
+              </div>
+              <button id="wizardParseBtn" class="btn btn-primary" type="button">Parse Text & Extract Lines</button>
+            </div>
+          </div>
+          
+          <!-- Method B: OCR Upload -->
+          <div id="methodOcr" class="method-workspace hidden">
+            <div id="wizardUploadZone" class="upload-zone" style="border: 2px dashed var(--line); padding: 30px; text-align: center; border-radius: 8px; background: rgba(250,252,251,0.4); cursor: pointer; margin-bottom: 15px;">
+              <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" style="color: var(--saffron); margin-bottom: 8px; margin-left: auto; margin-right: auto; display: block;">
+                <path fill="none" d="M0 0h24v24H0z"/>
+                <path d="M12.414 5H21a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h7.414l2 2zM4 5v14h16V7h-8.414l-2-2H4zm8 3l4 4h-3v4h-2v-4H8l4-4z" fill="currentColor"/>
+              </svg>
+              <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; color: var(--ink);">Drag and drop invoice image/PDF here</p>
+              <p style="font-size: 0.8rem; color: var(--clay); margin-bottom: 12px;">or <span class="upload-browse" style="color: var(--saffron); font-weight: 700; text-decoration: underline;">browse files</span></p>
+              <span style="font-size: 0.72rem; color: var(--clay);">Supports JPG, PNG, and PDF up to 5MB</span>
+              <input type="file" id="wizardFileInput" accept="image/*,application/pdf" class="hidden">
+            </div>
+            
+            <div id="wizardFileDetails" class="file-details-card hidden" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #fff; margin-top: 15px;">
+              <div id="wizardPdfIcon" class="pdf-icon-placeholder hidden" style="font-weight: bold; background: #dc3545; color: #fff; padding: 8px; border-radius: 4px;">PDF</div>
+              <img id="wizardFileThumb" class="file-details-thumb hidden" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" alt="Thumbnail">
+              <div style="flex: 1; min-width: 0;">
+                <strong id="wizardFileName" style="font-size: 0.85rem; display: block; word-break: break-all;">filename.png</strong>
+                <span id="wizardFileSize" style="font-size: 0.75rem; color: var(--clay);">123 KB</span>
+              </div>
+              <button id="wizardRemoveFileBtn" class="file-remove-btn" type="button" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--danger-color);">&times;</button>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+              <button id="wizardExtractOcrBtn" class="btn btn-primary" type="button" disabled>Extract Bill with OCR</button>
+            </div>
+          </div>
+          
+          <!-- Method C: Manual Entry Form -->
+          <div id="methodManual" class="method-workspace hidden">
+            <div class="form-group">
+              <label for="wizardManualVendorId">Vendor <span class="required">*</span></label>
+              <select id="wizardManualVendorId" class="select-control" style="width: 100%;">
+                <option value="">Select a vendor...</option>
+              </select>
+            </div>
+            <div class="two-column-fields">
+              <div class="form-group">
+                <label for="wizardManualBillNumber">Bill / Invoice Number</label>
+                <input id="wizardManualBillNumber" class="form-control" type="text" placeholder="e.g. INV-1002">
+              </div>
+              <div class="form-group">
+                <label for="wizardManualBillDate">Bill Date <span class="required">*</span></label>
+                <input id="wizardManualBillDate" class="form-control" type="date">
               </div>
             </div>
             
-            <form id="purchaseEntryForm" class="details-form" onsubmit="return false;">
-              <div class="form-group">
-                <label for="billVendorId">Vendor <span class="required">*</span></label>
-                <select id="billVendorId" class="select-control" required>
-                  <option value="">Select a vendor...</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="billDate">Bill Date <span class="required">*</span></label>
-                  <input id="billDate" class="form-control" type="date" required>
-                </div>
-                <div class="form-group">
-                  <label for="billNumber">Bill Number</label>
-                  <input id="billNumber" class="form-control" type="text" placeholder="e.g. INV-1234">
-                </div>
-              </div>
-
-              <hr style="border: 0; border-top: 1px solid var(--line); margin: 20px 0;">
-
+            <fieldset style="border: 1px solid var(--line); border-radius: 8px; padding: 15px; margin-top: 15px; background: rgba(255,255,255,0.4);">
+              <legend style="padding: 0 8px; font-size: 0.82rem; font-weight: 700; color: var(--clay); text-transform: uppercase;">Add Line Item</legend>
               <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <label for="billStockItemId" style="margin-bottom: 0;">Stock Item <span class="required">*</span></label>
-                  <button id="addStockItemBtn" class="btn btn-link btn-small" type="button" style="padding: 0; font-size: 0.8rem; height: auto;">+ Add New Stock Item</button>
+                  <label for="wizardManualItemId" style="margin-bottom: 0;">Stock Item</label>
+                  <button id="wizardAddStockItemBtn" class="btn btn-link btn-small" type="button" style="padding: 0; font-size: 0.8rem; height: auto;">+ Add New Stock Item</button>
                 </div>
-                <select id="billStockItemId" class="select-control">
+                <select id="wizardManualItemId" class="select-control" style="width: 100%;">
                   <option value="">Select a stock item...</option>
                 </select>
               </div>
-
-              <div class="form-row">
+              <div class="two-column-fields">
                 <div class="form-group">
-                  <label for="billItemQuantity">Quantity <span class="required">*</span></label>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <input id="billItemQuantity" class="form-control" type="number" step="0.001" min="0.001" placeholder="0.000">
-                    <span id="billItemUnitDisplay" style="font-size: 0.85rem; color: var(--clay); min-width: 40px;">unit</span>
+                  <label for="wizardManualQty">Quantity</label>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <input id="wizardManualQty" class="form-control" type="number" step="0.001" min="0.001" placeholder="0.000">
+                    <span id="wizardManualUnitDisplay" style="font-size: 0.85rem; color: var(--clay); min-width: 35px;">unit</span>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="billItemUnitPrice">Unit Price (₹) <span class="required">*</span></label>
-                  <input id="billItemUnitPrice" class="form-control" type="number" step="0.01" min="0.00" placeholder="0.00">
+                  <label for="wizardManualPrice">Unit Price (â‚¹)</label>
+                  <input id="wizardManualPrice" class="form-control" type="number" step="0.01" min="0" placeholder="0.00">
                 </div>
               </div>
-
-              <button id="addLineItemBtn" class="btn btn-outline" type="button" style="width: 100%; justify-content: center; margin-top: 10px;">Add Line Item</button>
-            </form>
-          </section>
-
-          <!-- Right Column: Draft Receipt Preview -->
-          <section class="panel panel-soft">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Draft receipt</p>
-                <h3 id="selectedOutletTitle">Purchase bill preview</h3>
+              <button id="wizardManualAddLineBtn" class="btn btn-outline btn-small" style="width: 100%; justify-content: center; margin-top: 10px;" type="button">Add Line to Draft</button>
+            </fieldset>
+            
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+              <button id="wizardManualProceedBtn" class="btn btn-primary" type="button">Proceed to Draft Review</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- OCR / Parser Loading Spinner -->
+        <div id="wizardLoading" class="placeholder-view hidden">
+          <div class="ocr-spinner"></div>
+          <h4 style="margin-top: 15px;">Extracting Bill Content</h4>
+          <p style="font-size: 0.85rem; color: var(--clay); margin-bottom: 20px;">Running OCR layout extraction and parsing stock item matches...</p>
+          
+          <div class="ocr-steps-indicator" style="width: 100%; max-width: 400px; text-align: left; margin: 0 auto; display: flex; flex-direction: column; gap: 6px;">
+            <div class="ocr-step-indicator-row" id="wizardStepUpload" style="display: flex; gap: 8px; font-size: 0.85rem; color: var(--clay);">
+              <span class="ocr-step-status">â³</span>
+              <span class="ocr-step-text">Uploading invoice to storage...</span>
+            </div>
+            <div class="ocr-step-indicator-row" id="wizardStepAnalyze" style="display: flex; gap: 8px; font-size: 0.85rem; color: var(--clay);">
+              <span class="ocr-step-status">â³</span>
+              <span class="ocr-step-text">Running layout structure OCR analysis...</span>
+            </div>
+            <div class="ocr-step-indicator-row" id="wizardStepExtract" style="display: flex; gap: 8px; font-size: 0.85rem; color: var(--clay);">
+              <span class="ocr-step-status">â³</span>
+              <span class="ocr-step-text">Parsing line descriptions & prices...</span>
+            </div>
+            <div class="ocr-step-indicator-row" id="wizardStepMap" style="display: flex; gap: 8px; font-size: 0.85rem; color: var(--clay);">
+              <span class="ocr-step-status">â³</span>
+              <span class="ocr-step-text">Mapping items to stock catalogue...</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 2: Draft Review Form -->
+        <div id="wizardStep2" class="wizard-step hidden">
+          <!-- Collapsible Attachment Preview Panel -->
+          <div id="wizardAttachmentCard" class="visual-attachment-card hidden" style="border: 1px solid var(--line); border-radius: 8px; margin-bottom: 15px; background: #fff;">
+            <div class="visual-attachment-header" id="wizardToggleAttachmentBtn" style="padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; border-bottom: 1px solid var(--line);">
+              <span class="visual-attachment-title">ðŸ“Ž Original Invoice Attachment</span>
+              <span class="visual-attachment-chevron">â–¼</span>
+            </div>
+            <div id="wizardAttachmentContent" class="visual-attachment-content hidden" style="padding: 12px; background: rgba(0,0,0,0.02);">
+              <div class="visual-attachment-viewer-box" style="text-align: center;">
+                <img id="wizardAttachmentImg" class="visual-attachment-img hidden" style="max-width: 100%; max-height: 300px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" alt="Uploaded Receipt">
+                <embed id="wizardAttachmentPdf" class="visual-attachment-pdf hidden" type="application/pdf" width="100%" height="300">
               </div>
             </div>
+          </div>
 
-            <div class="selection-actions" style="margin-bottom: 15px;">
-              <button id="approveBillBtn" class="btn btn-primary" type="button" disabled>Approve & Save Bill</button>
-              <button id="clearBillBtn" class="btn btn-outline" type="button">Clear</button>
+          <p class="eyebrow" style="margin-bottom: 12px;">Step 2: Verify Draft Details & Match Items</p>
+          
+          <form id="wizardDraftForm" onsubmit="return false;">
+            <div class="form-group">
+              <label for="draftVendorId">Vendor <span class="required">*</span></label>
+              <select id="draftVendorId" class="select-control" style="width: 100%;" required>
+                <option value="">Select a vendor...</option>
+              </select>
             </div>
-
-            <div id="saveFeedback" class="inline-feedback hidden"></div>
             
-            <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+            <div class="two-column-fields">
+              <div class="form-group">
+                <label for="draftBillNumber">Bill / Invoice Number</label>
+                <input id="draftBillNumber" class="form-control" type="text" placeholder="e.g. IN-9923">
+              </div>
+              <div class="form-group">
+                <label for="draftBillDate">Bill Date <span class="required">*</span></label>
+                <input id="draftBillDate" class="form-control" type="date" required>
+              </div>
+            </div>
+            
+            <div class="panel-header-spread" style="margin-top: 15px; margin-bottom: 8px;">
+              <p class="eyebrow" style="margin-bottom: 0;">Extracted Line Items</p>
+              <span id="wizardMatchStatus" class="mini-badge">Verifying Matches</span>
+            </div>
+            
+            <div class="bill-items-table-container" style="overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; margin-bottom: 15px;">
               <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
                 <thead>
-                  <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
-                    <th style="padding: 8px 4px;">Item</th>
-                    <th style="padding: 8px 4px; text-align: right;">Qty</th>
-                    <th style="padding: 8px 4px;">Unit</th>
-                    <th style="padding: 8px 4px; text-align: right;">Rate (₹)</th>
-                    <th style="padding: 8px 4px; text-align: right;">Total (₹)</th>
-                    <th style="padding: 8px 4px; text-align: center;"></th>
+                  <tr style="border-bottom: 1px solid var(--line); font-size: 0.8rem; color: var(--clay); text-align: left; background: var(--cream);">
+                    <th style="padding: 8px; width: 30%;">Raw Item Description</th>
+                    <th style="padding: 8px; width: 30%;">Stock Item Match</th>
+                    <th style="padding: 8px; text-align: right; width: 15%;">Qty</th>
+                    <th style="padding: 8px; text-align: right; width: 20%;">Rate (â‚¹)</th>
+                    <th style="padding: 8px; text-align: center; width: 5%;"></th>
                   </tr>
                 </thead>
-                <tbody id="billItemsBody">
-                  <tr>
-                    <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">No bill items added yet.</td>
-                  </tr>
+                <tbody id="wizardDraftItemsBody">
+                  <!-- Rendered dynamically -->
                 </tbody>
-                <tfoot>
-                  <tr style="border-top: 2px solid var(--line); font-weight: bold;">
-                    <td colspan="4" style="text-align: right; padding: 10px 5px;">Total:</td>
-                    <td id="billTotalDisplay" style="text-align: right; padding: 10px 5px; color: var(--emerald);">₹0.00</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
-          </section>
-        </div>
-      </section>
-
-      <section class="overview-grid">
-        <section class="panel" style="grid-column: span 2;">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Purchase review</p>
-              <h3>Bills and stock changes for this date</h3>
+            
+            <div class="summary-stack" style="background: var(--cream); padding: 14px; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 20px;">
+              <div class="summary-row" style="font-size: 0.9rem;">
+                <span>Total Amount detected from text/OCR:</span>
+                <strong id="wizardParsedTotalText">â‚¹0.00</strong>
+              </div>
+              <div class="summary-row" style="font-size: 0.9rem;">
+                <span>Calculated Total (sum of lines):</span>
+                <strong id="wizardCalculatedTotalText" style="color: var(--saffron);">â‚¹0.00</strong>
+              </div>
+              <div id="wizardMismatchWarning" class="record-pill record-pill-rejected hidden" style="font-size: 0.75rem; text-align: center; padding: 6px; width: 100%; border-radius: 4px; font-weight: 500; display: block; margin-top: 8px;">
+                âš ï¸ Sum of lines does not match parsed bill total!
+              </div>
+              <div id="wizardMatchBadge" class="record-pill record-pill-live hidden" style="font-size: 0.75rem; text-align: center; padding: 6px; width: 100%; border-radius: 4px; font-weight: 500; display: block; margin-top: 8px;">
+                âœ“ Sum of lines matches parsed bill total.
+              </div>
             </div>
-          </div>
-          <div id="overviewGrid" class="outlet-overview-grid">
-            <p class="summary-empty">Loading purchase overview.</p>
-          </div>
-        </section>
-      </section>
-    </main>
+            
+            <div class="modal-actions" style="display: flex; gap: 10px;">
+              <button id="wizardSubmitBtn" class="btn btn-primary" type="button" style="flex: 1;">Approve & Save Bill</button>
+              <button id="wizardBackBtn" class="btn btn-outline" type="button">Back</button>
+              <button id="wizardClearBtn" class="btn btn-outline" type="button" style="color: var(--danger-color); border-color: rgba(184, 71, 59, 0.2);">Clear & Start Over</button>
+            </div>
+            
+            <div id="wizardFeedback" class="inline-feedback hidden" style="margin-top: 15px; text-align: center;"></div>
+          </form>
+        </div>
+        
+      </div>
+    </div>
   </div>
 
   <!-- Inline Modal for Quick Adding Stock Item -->
@@ -250,7 +421,8 @@
         </div>
         <div class="form-group">
           <label for="quickStockNotes">Notes</label>
-          <textarea id="quickStockNotes" class="form-control text-area-control" rows="2" placeholder="Storage instructions or description"></textarea>
+          <textarea id="quickStockNotes" class="form-control text-area-control" rows="2"
+            placeholder="Storage instructions or description"></textarea>
         </div>
         <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 15px;">
           <button class="btn btn-primary" type="submit" style="flex: 1;">Create Item</button>
@@ -260,11 +432,50 @@
     </div>
   </div>
 
+  <!-- Review Bill Modal -->
+  <div id="reviewModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 700px; width: 95%;">
+      <div class="modal-header">
+        <h4>Review Purchase Bill</h4>
+        <button id="closeModalBtn" class="modal-close-btn" type="button">&times;</button>
+      </div>
+      <div style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+        <div id="modalBillMeta" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+          <!-- Loaded dynamically -->
+        </div>
+        <div id="modalAlertsSummary" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Alert warnings for this bill -->
+        </div>
+        <h5>Bill Line Items</h5>
+        <div style="overflow-x: auto; margin-top: 10px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 15px;">
+          <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: var(--cream); font-size: 0.85rem; border-bottom: 1px solid var(--line);">
+                <th style="padding: 8px; text-align: left;">Item</th>
+                <th style="padding: 8px; text-align: right;">Qty</th>
+                <th style="padding: 8px; text-align: left;">Unit</th>
+                <th style="padding: 8px; text-align: right;">Unit Price</th>
+                <th style="padding: 8px; text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody id="modalBillItemsBody">
+              <!-- Loaded dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div id="modalActions" class="modal-actions" style="justify-content: flex-end; margin-top: 20px;">
+          <!-- Owner approve / reject / cancel buttons -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="globalDeleteModal" class="global-modal-overlay">
     <div class="global-modal-content">
-      <div class="global-modal-icon">⚠️</div>
+      <div class="global-modal-icon">âš ï¸</div>
       <h3 class="global-modal-title" id="deleteModalTitle">Confirm Deletion</h3>
-      <p class="global-modal-text" id="deleteModalText">Are you sure you want to delete this record? This action cannot be undone.</p>
+      <p class="global-modal-text" id="deleteModalText">Are you sure you want to delete this record? This action cannot
+        be undone.</p>
       <div class="global-modal-actions">
         <button id="cancelDeleteBtn" class="btn btn-outline">Cancel</button>
         <button id="confirmDeleteBtn" class="btn btn-danger">Yes, Delete</button>
@@ -273,7 +484,11 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="security.js"></script>
   <script src="toast.js"></script>
+  <script src="bill-modal.js"></script>
   <script src="purchase-register.js"></script>
 </body>
+
 </html>

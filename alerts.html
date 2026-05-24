@@ -1,180 +1,185 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restaurant Stock Control - Alerts</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Restaurant Stock Control - Alerts</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link
+ href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+ rel="stylesheet">
+ <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="app-shell">
-  <aside class="sidebar">
-    <div class="brand-block">
-      <p class="eyebrow">Restaurant Stock Control</p>
-      <h1>Suspicious Bill Alerts</h1>
-    </div>
+ <aside class="sidebar">
+ <div class="brand-block">
+ <p class="eyebrow">Restaurant Stock Control</p>
+ <h1>Suspicious Bill Alerts</h1>
+ </div>
 
-    <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="master-data.html">
-        <span>Stock Setup</span>
-      </a>
-      <a class="nav-item nav-link" href="dashboard.html">
-        <span>Stock Dashboard</span>
-      </a>
-      <a class="nav-item nav-link" href="bill-capture.html">
-        <span>Bill Capture</span>
-      </a>
-      <a class="nav-item nav-link" href="purchase-register.html">
-        <span>Purchase Register</span>
-      </a>
-      <a class="nav-item nav-link" href="stock-ledger.html">
-        <span>Stock Ledger</span>
-      </a>
-      <a class="nav-item nav-item-active nav-link" href="alerts.html" id="navAlerts">
-        <span>Alerts</span>
-        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
-      </a>
-    </nav>
+ <nav class="sidebar-nav" aria-label="Primary">
+ <a class="nav-item nav-link" href="dashboard.html">
+ <span>Stock Dashboard</span>
+ </a>
+ <a class="nav-item nav-link" href="purchase-register.html">
+ <span>Purchase Bills</span>
+ </a>
+ <a class="nav-item nav-link" href="stock-ledger.html">
+ <span>Stock Ledger</span>
+ </a>
+ <a class="nav-item nav-item-active nav-link" href="alerts.html" id="navAlerts">
+ <span>Alerts</span>
+ <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+ </a>
+ <a class="nav-item nav-link" href="master-data.html">
+ <span>Stock Setup</span>
+ </a>
+ </nav>
 
-    <div class="sidebar-note">
-      <p class="note-label">Current goal</p>
-      <p id="sidebarScope">Audit price hikes, duplicate entries, and quantity anomalies to secure purchasing.</p>
-    </div>
-  </aside>
+ <div class="sidebar-note">
+ <p class="note-label">Current goal</p>
+ <p id="sidebarScope">Audit price hikes, duplicate entries, and quantity anomalies to secure purchasing.</p>
+ </div>
+ </aside>
 
-  <div class="content-shell">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Phase 7</p>
-        <h2>Suspicious Bill Alerts</h2>
-      </div>
+ <div class="content-shell">
+ <header class="topbar">
+ <div>
+ <p class="eyebrow">Phase 7</p>
+ <h2>Suspicious Bill Alerts</h2>
+ </div>
 
-      <div class="topbar-actions">
-        <div class="user-meta">
-          <span id="userEmail"></span>
-          <span id="userRole" class="role-pill"></span>
-        </div>
-        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
-      </div>
-    </header>
+ <div class="topbar-actions">
+ <div class="user-meta">
+ <span id="userEmail"></span>
+ <span id="userRole" class="role-pill"></span>
+ </div>
+ <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+ </div>
+ </header>
 
-    <main class="content-main">
+ <main class="content-main">
 
 
-      <section class="status-grid">
-        <article class="status-card" style="border-left: 4px solid var(--danger-color);">
-          <p class="card-label">Active Alerts</p>
-          <strong id="activeAlertsCountValue">-</strong>
-          <span>Total unresolved flags currently requiring attention.</span>
-        </article>
-        <article class="status-card" style="border-left: 4px solid var(--danger-color);">
-          <p class="card-label">Critical Issues</p>
-          <strong id="criticalAlertsCountValue">-</strong>
-          <span>Issues that could lead to financial losses or billing duplication.</span>
-        </article>
-        <article class="status-card" style="border-left: 4px solid var(--marigold);">
-          <p class="card-label">Warnings</p>
-          <strong id="warningAlertsCountValue">-</strong>
-          <span>Mismatched item names, units, or unusual quantity thresholds.</span>
-        </article>
-      </section>
+ <section class="status-grid">
+ <article class="status-card" style="border-left: 4px solid var(--danger-color);">
+ <p class="card-label">Active Alerts</p>
+ <strong id="activeAlertsCountValue">-</strong>
+ <span>Total unresolved flags currently requiring attention.</span>
+ </article>
+ <article class="status-card" style="border-left: 4px solid var(--danger-color);">
+ <p class="card-label">Critical Issues</p>
+ <strong id="criticalAlertsCountValue">-</strong>
+ <span>Issues that could lead to financial losses or billing duplication.</span>
+ </article>
+ <article class="status-card" style="border-left: 4px solid var(--marigold);">
+ <p class="card-label">Warnings</p>
+ <strong id="warningAlertsCountValue">-</strong>
+ <span>Mismatched item names, units, or unusual quantity thresholds.</span>
+ </article>
+ </section>
 
-      <section class="panel">
-        <div class="panel-header panel-header-spread">
-          <div>
-            <p class="eyebrow">Audit Console</p>
-            <h3>Filter alerts</h3>
-          </div>
-          <div id="workspaceBadge" class="mini-badge">Loading alerts</div>
-        </div>
+ <section class="panel">
+ <div class="panel-header panel-header-spread">
+ <div>
+ <p class="eyebrow">Audit Console</p>
+ <h3>Filter alerts</h3>
+ </div>
+ <div id="workspaceBadge" class="mini-badge">Loading alerts</div>
+ </div>
 
-        <div class="tab-strip" style="gap: 16px; align-items: center;">
-          <label class="selector-wrap" style="min-width: 150px; display: inline-grid;" for="filterSeverity">
-            <span>Severity</span>
-            <select id="filterSeverity" class="select-control">
-              <option value="all">All Severities</option>
-              <option value="critical">Critical Only</option>
-              <option value="warning">Warnings Only</option>
-            </select>
-          </label>
+ <div class="tab-strip" style="gap: 16px; align-items: center;">
+ <label class="selector-wrap" style="min-width: 150px; display: inline-grid;" for="filterSeverity">
+ <span>Severity</span>
+ <select id="filterSeverity" class="select-control">
+ <option value="all">All Severities</option>
+ <option value="critical">Critical Only</option>
+ <option value="warning">Warnings Only</option>
+ </select>
+ </label>
 
-          <label class="selector-wrap" style="min-width: 150px; display: inline-grid;" for="filterStatus">
-            <span>Status</span>
-            <select id="filterStatus" class="select-control">
-              <option value="active">Active Only</option>
-              <option value="resolved">Resolved</option>
-              <option value="dismissed">Dismissed</option>
-              <option value="all">All Alerts</option>
-            </select>
-          </label>
+ <label class="selector-wrap" style="min-width: 150px; display: inline-grid;" for="filterStatus">
+ <span>Status</span>
+ <select id="filterStatus" class="select-control">
+ <option value="active">Active Only</option>
+ <option value="resolved">Resolved</option>
+ <option value="dismissed">Dismissed</option>
+ <option value="all">All Alerts</option>
+ </select>
+ </label>
 
-          <label class="selector-wrap" style="min-width: 150px; display: inline-grid;" for="filterType">
-            <span>Alert Type</span>
-            <select id="filterType" class="select-control">
-              <option value="all">All Types</option>
-              <option value="price_jump">Price Jump</option>
-              <option value="duplicate_bill_number">Duplicate Bill Number</option>
-              <option value="total_mismatch">Total Mismatch</option>
-              <option value="high_quantity">High Quantity</option>
-              <option value="unknown_vendor">Unknown Vendor</option>
-              <option value="unknown_item">Unknown Item</option>
-              <option value="unit_change">Unit Mismatch</option>
-            </select>
-          </label>
-        </div>
+ <label class="selector-wrap" style="min-width: 150px; display: inline-grid;" for="filterType">
+ <span>Alert Type</span>
+ <select id="filterType" class="select-control">
+ <option value="all">All Types</option>
+ <option value="price_jump">Price Jump</option>
+ <option value="duplicate_bill_number">Duplicate Bill Number</option>
+ <option value="total_mismatch">Total Mismatch</option>
+ <option value="high_quantity">High Quantity</option>
+ <option value="unknown_vendor">Unknown Vendor</option>
+ <option value="unknown_item">Unknown Item</option>
+ <option value="unit_change">Unit Mismatch</option>
+ </select>
+ </label>
+ </div>
 
-        <div id="alertsList" style="margin-top: 20px;">
-          <!-- Alerts render dynamically here -->
-          <div class="summary-empty" style="text-align: center; padding: 40px;">
-            <p>Loading alerts list...</p>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
+ <div id="alertsList" style="margin-top: 20px;">
+ <!-- Alerts render dynamically here -->
+ <div class="summary-empty" style="text-align: center; padding: 40px;">
+ <p>Loading alerts list...</p>
+ </div>
+ </div>
+ </section>
+ </main>
+ </div>
 
-  <!-- Review Bill Modal -->
-  <div id="reviewModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 700px;">
-      <div class="modal-header">
-        <h4>Review Purchase Bill</h4>
-        <button id="closeModalBtn" class="modal-close-btn" type="button">&times;</button>
-      </div>
-      <div style="padding: 20px; max-height: 80vh; overflow-y: auto;">
-        <div id="modalBillMeta" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-          <!-- Loaded dynamically -->
-        </div>
-        <div id="modalAlertsSummary" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
-          <!-- Alert warnings for this bill -->
-        </div>
-        <h5>Bill Line Items</h5>
-        <div style="overflow-x: auto; margin-top: 10px;">
-          <table class="bill-items-table" style="width: 100%;">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Unit</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody id="modalBillItemsBody">
-              <!-- Loaded dynamically -->
-            </tbody>
-          </table>
-        </div>
-        <div id="modalActions" class="modal-actions" style="justify-content: flex-end; margin-top: 20px;">
-          <!-- Owner approve / reject / cancel buttons -->
-        </div>
-      </div>
-    </div>
-  </div>
+ <!-- Review Bill Modal -->
+ <div id="reviewModal" class="modal-overlay hidden">
+ <div class="modal-content" style="max-width: 700px;">
+ <div class="modal-header">
+ <h4>Review Purchase Bill</h4>
+ <button id="closeModalBtn" class="modal-close-btn" type="button">&times;</button>
+ </div>
+ <div style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+ <div id="modalBillMeta"
+ style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+ <!-- Loaded dynamically -->
+ </div>
+ <div id="modalAlertsSummary" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+ <!-- Alert warnings for this bill -->
+ </div>
+ <h5>Bill Line Items</h5>
+ <div style="overflow-x: auto; margin-top: 10px;">
+ <table class="bill-items-table" style="width: 100%;">
+ <thead>
+ <tr>
+ <th>Item</th>
+ <th>Qty</th>
+ <th>Unit</th>
+ <th>Unit Price</th>
+ <th>Total</th>
+ </tr>
+ </thead>
+ <tbody id="modalBillItemsBody">
+ <!-- Loaded dynamically -->
+ </tbody>
+ </table>
+ </div>
+ <div id="modalActions" class="modal-actions" style="justify-content: flex-end; margin-top: 20px;">
+ <!-- Owner approve / reject / cancel buttons -->
+ </div>
+ </div>
+ </div>
+ </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="toast.js"></script>
-  <script src="alerts.js?v=1"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="security.js"></script>
+ <script src="toast.js"></script>
+ <script src="bill-modal.js"></script>
+ <script src="alerts.js?v=1"></script>
 </body>
+
 </html>

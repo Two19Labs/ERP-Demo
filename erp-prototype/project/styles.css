@@ -1,0 +1,241 @@
+/* ─── ERP // mono+red design system ──────────────────────────────── */
+
+:root {
+  --bg: #f4f4f2;
+  --surface: #ffffff;
+  --ink: #0a0a0a;
+  --ink-2: #1a1a1a;
+  --muted: #6b6b68;
+  --muted-2: #9a9a96;
+  --hair: rgba(10, 10, 10, 0.10);
+  --hair-2: rgba(10, 10, 10, 0.06);
+  --dot: rgba(10, 10, 10, 0.18);
+  --accent: #e6332a;     /* tweakable */
+  --accent-ink: #ffffff;
+  --ok: #1f7a4d;
+  --warn: #c87a00;
+  --bad: #e6332a;
+  --sidebar-bg: #0a0a0a;
+  --sidebar-ink: #e8e8e6;
+  --sidebar-muted: #6e6e6a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #d8d8d4;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Reusable surfaces ─── */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+}
+
+.dotgrid {
+  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+  background-size: 14px 14px;
+  background-position: 0 0;
+}
+
+.dotgrid-fine {
+  background-image: radial-gradient(var(--dot) 0.8px, transparent 0.8px);
+  background-size: 8px 8px;
+}
+
+/* ─── Type ─── */
+.mono { font-family: 'JetBrains Mono', monospace; }
+.kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kicker-ink { color: var(--ink); }
+.kicker-accent { color: var(--accent); }
+
+h1, h2, h3, h4 { font-family: 'JetBrains Mono', monospace; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+
+/* ─── Buttons / badges ─── */
+.btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 0;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary { background: var(--ink); color: #fff; }
+.btn-accent { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-ghost { border-color: var(--hair); color: var(--ink); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border: 1px solid var(--hair);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 2px;
+}
+.tag-accent { color: var(--accent); border-color: var(--accent); background: rgba(230,51,42,0.06); }
+.tag-ok { color: var(--ok); border-color: rgba(31,122,77,0.35); background: rgba(31,122,77,0.06); }
+.tag-warn { color: var(--warn); border-color: rgba(200,122,0,0.35); background: rgba(200,122,0,0.06); }
+.tag-ghost { color: var(--muted); }
+.tag-solid { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.dot-accent { background: var(--accent); }
+.dot-ok { background: var(--ok); }
+.dot-warn { background: var(--warn); }
+.dot-bad { background: var(--bad); }
+.dot-muted { background: var(--muted-2); }
+
+/* ─── Inputs ─── */
+.fld {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 12px 14px;
+  background: #fafafa;
+  border: 1px solid var(--hair);
+  color: var(--ink);
+  outline: none;
+  border-radius: 0;
+}
+.fld:focus { border-color: var(--ink); background: #fff; }
+.fld-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+
+/* ─── Tables ─── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hair);
+}
+.tbl td {
+  padding: 14px 12px;
+  border-bottom: 1px dashed var(--hair);
+  vertical-align: middle;
+}
+.tbl tr:last-child td { border-bottom: none; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ─── Sidebar ─── */
+.sidebar {
+  background: var(--sidebar-bg);
+  color: var(--sidebar-ink);
+  border-right: 1px solid #1a1a1a;
+}
+.sidebar a, .sidebar .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--sidebar-ink);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+}
+.sidebar .nav-item.active {
+  background: #161616;
+  border-left-color: var(--accent);
+  color: #fff;
+}
+.sidebar .nav-item .nav-num {
+  color: var(--sidebar-muted);
+  font-size: 10px;
+  width: 22px;
+}
+.sidebar .nav-item.active .nav-num { color: var(--accent); }
+
+/* ─── ASCII brackets ─── */
+.bk { color: var(--muted-2); }
+
+/* ─── Big numeric / display ─── */
+.display-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* LED/dot matrix glyph emulator: small dotted ring underneath big digits */
+.matrix-line {
+  height: 6px;
+  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+/* Subtle hover (none functional — static designs) */
+
+/* Frames inside artboards: kill any inner scroll */
+.artboard-root { width: 100%; height: 100%; overflow: hidden; position: relative; background: var(--bg); }
+
+/* The "phase strip" along top of main area */
+.phase-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.phase-strip .seg { width: 18px; height: 2px; background: var(--hair); }
+.phase-strip .seg.on { background: var(--accent); }
+
+/* Sticky-style note */
+.scribble {
+  background: #fff;
+  border: 1px solid var(--hair);
+  padding: 14px 16px;
+}
+
+/* Status row stripes */
+.row-strip { display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--hair); }
+.row-strip:last-child { border-bottom: none; }
+
+/* Crosshair markers (Nothing-adjacent feel) */
+.crosshair {
+  position: absolute;
+  width: 12px; height: 12px;
+  pointer-events: none;
+}
+.crosshair::before, .crosshair::after {
+  content: '';
+  position: absolute;
+  background: var(--ink);
+}
+.crosshair::before { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+.crosshair::after { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+.crosshair.muted::before, .crosshair.muted::after { background: var(--hair); }

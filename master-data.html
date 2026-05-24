@@ -1,280 +1,278 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restaurant Stock Control - Stock Setup</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Restaurant Stock Control - Stock Setup</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="style.css">
 </head>
 <body class="app-shell">
-  <aside class="sidebar">
-    <div class="brand-block">
-      <p class="eyebrow">Restaurant Stock Control</p>
-      <h1>Stock items and suppliers for one restaurant</h1>
-    </div>
+ <aside class="sidebar">
+ <div class="brand-block">
+ <p class="eyebrow">Restaurant Stock Control</p>
+ <h1>Stock items and suppliers for one restaurant</h1>
+ </div>
 
-    <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-item-active nav-link" href="master-data.html">
-        <span>Stock Setup</span>
-      </a>
-      <a class="nav-item nav-link" href="dashboard.html">
-        <span>Stock Dashboard</span>
-      </a>
-      <a class="nav-item nav-link" href="bill-capture.html">
-        <span>Bill Capture</span>
-      </a>
-      <a class="nav-item nav-link" href="purchase-register.html">
-        <span>Purchase Register</span>
-      </a>
-      <a class="nav-item nav-link" href="stock-ledger.html">
-        <span>Stock Ledger</span>
-      </a>
-      <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
-        <span>Alerts</span>
-        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
-      </a>
-    </nav>
+ <nav class="sidebar-nav" aria-label="Primary">
+ <a class="nav-item nav-link" href="dashboard.html">
+ <span>Stock Dashboard</span>
+ </a>
+ <a class="nav-item nav-link" href="purchase-register.html">
+ <span>Purchase Bills</span>
+ </a>
+ <a class="nav-item nav-link" href="stock-ledger.html">
+ <span>Stock Ledger</span>
+ </a>
+ <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
+ <span>Alerts</span>
+ <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+ </a>
+ <a class="nav-item nav-item-active nav-link" href="master-data.html">
+ <span>Stock Setup</span>
+ </a>
+ </nav>
 
-    <div class="sidebar-note">
-      <p class="note-label">Current goal</p>
-      <p id="sidebarScope">Owner maintains stock items and approved suppliers before staff bills are accepted.</p>
-    </div>
-  </aside>
+ <div class="sidebar-note">
+ <p class="note-label">Current goal</p>
+ <p id="sidebarScope">Owner maintains stock items and approved suppliers before staff bills are accepted.</p>
+ </div>
+ </aside>
 
-  <div class="content-shell">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Phase 2</p>
-        <h2>Stock Setup</h2>
-      </div>
+ <div class="content-shell">
+ <header class="topbar">
+ <div>
+ <p class="eyebrow">Phase 2</p>
+ <h2>Stock Setup</h2>
+ </div>
 
-      <div class="topbar-actions">
-        <div class="user-meta">
-          <span id="userEmail"></span>
-          <span id="userRole" class="role-pill"></span>
-        </div>
-        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
-      </div>
-    </header>
+ <div class="topbar-actions">
+ <div class="user-meta">
+ <span id="userEmail"></span>
+ <span id="userRole" class="role-pill"></span>
+ </div>
+ <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+ </div>
+ </header>
 
-    <main class="content-main">
-      <section class="hero-panel">
-        <div>
-          <p class="eyebrow">Reference data</p>
-          <h3 id="welcomeTitle">Loading stock setup</h3>
-          <p id="welcomeText" class="supporting-text">We are checking your access, then loading stock items and approved suppliers.</p>
-        </div>
+ <main class="content-main">
+ <section class="hero-panel">
+ <div>
+ <p class="eyebrow">Reference data</p>
+ <h3 id="welcomeTitle">Loading stock setup</h3>
+ <p id="welcomeText" class="supporting-text">We are checking your access, then loading stock items and approved suppliers.</p>
+ </div>
 
-        <div class="hero-controls">
-          <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
-            <span>Approved supplier list</span>
-            <select id="outletSelector" class="select-control"></select>
-          </label>
-          <div id="managerOutletBadge" class="manager-badge hidden"></div>
-        </div>
-      </section>
+ <div class="hero-controls">
+ <label id="outletSelectorWrap" class="selector-wrap hidden" for="outletSelector">
+ <span>Approved supplier list</span>
+ <select id="outletSelector" class="select-control"></select>
+ </label>
+ <div id="managerOutletBadge" class="manager-badge hidden"></div>
+ </div>
+ </section>
 
-      <section class="status-grid">
-        <article class="status-card">
-          <p class="card-label">Stock items</p>
-          <strong id="stockItemCountValue">-</strong>
-          <span>Items the restaurant buys, stores, and tracks.</span>
-        </article>
-        <article class="status-card">
-          <p class="card-label">Vendors</p>
-          <strong id="vendorCountValue">-</strong>
-          <span>Approved suppliers used to verify incoming bills.</span>
-        </article>
-      </section>
+ <section class="status-grid">
+ <article class="status-card">
+ <p class="card-label">Stock items</p>
+ <strong id="stockItemCountValue">-</strong>
+ <span>Items the restaurant buys, stores, and tracks.</span>
+ </article>
+ <article class="status-card">
+ <p class="card-label">Vendors</p>
+ <strong id="vendorCountValue">-</strong>
+ <span>Approved suppliers used to verify incoming bills.</span>
+ </article>
+ </section>
 
-      <section class="panel">
-        <div class="panel-header panel-header-spread">
-          <div>
-            <p class="eyebrow">Workspace</p>
-            <h3>Manage stock records</h3>
-          </div>
-          <div id="workspaceBadge" class="mini-badge">Loading access</div>
-        </div>
+ <section class="panel">
+ <div class="panel-header panel-header-spread">
+ <div>
+ <p class="eyebrow">Workspace</p>
+ <h3>Manage stock records</h3>
+ </div>
+ <div id="workspaceBadge" class="mini-badge">Loading access</div>
+ </div>
 
-        <div class="tab-strip" role="tablist" aria-label="Master data modules">
-          <button class="tab-button tab-button-active" id="tabStockItems" data-tab="stock_items" type="button">Stock Items</button>
-          <button class="tab-button" id="tabVendors" data-tab="vendors" type="button">Vendors</button>
-        </div>
+ <div class="tab-strip" role="tablist" aria-label="Master data modules">
+ <button class="tab-button tab-button-active" id="tabStockItems" data-tab="stock_items" type="button">Stock Items</button>
+ <button class="tab-button" id="tabVendors" data-tab="vendors" type="button">Vendors</button>
+ </div>
 
-        <div id="setupAlert" class="setup-alert hidden"></div>
+ <div id="setupAlert" class="setup-alert hidden"></div>
 
-        <div class="master-grid">
-          <section class="panel panel-soft" id="listPanel">
-            <div class="panel-header panel-header-spread">
-              <div>
-                <p class="eyebrow" id="listEyebrow">Shared master list</p>
-                <h3 id="listTitle">Stock items</h3>
-              </div>
-              <button id="addRecordBtn" class="btn btn-primary btn-small" type="button">+ New Stock Item</button>
-            </div>
-            <div id="listBody" class="record-list">
-              <p class="summary-empty">Loading records.</p>
-            </div>
-          </section>
+ <div class="master-grid">
+ <section class="panel panel-soft" id="listPanel">
+ <div class="panel-header panel-header-spread">
+ <div>
+ <p class="eyebrow" id="listEyebrow">Shared master list</p>
+ <h3 id="listTitle">Stock items</h3>
+ </div>
+ <button id="addRecordBtn" class="btn btn-primary btn-small" type="button">+ New Stock Item</button>
+ </div>
+ <div id="listBody" class="record-list">
+ <p class="summary-empty">Loading records.</p>
+ </div>
+ </section>
 
-          <section class="panel panel-soft" id="formPanel">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow" id="formEyebrow">Edit form</p>
-                <h3 id="formTitle">Stock item details</h3>
-              </div>
-            </div>
+ <section class="panel panel-soft" id="formPanel">
+ <div class="panel-header">
+ <div>
+ <p class="eyebrow" id="formEyebrow">Edit form</p>
+ <h3 id="formTitle">Stock item details</h3>
+ </div>
+ </div>
 
-            <div id="formHint" class="form-hint"></div>
+ <div id="formHint" class="form-hint"></div>
 
-            <div id="detailTabs" class="tab-strip hidden" style="margin-top: 10px; margin-bottom: 15px;">
-              <button class="tab-button tab-button-active" id="detailTabConfig" type="button">Configuration</button>
-              <button class="tab-button" id="detailTabHistory" type="button">History</button>
-            </div>
+ <div id="detailTabs" class="tab-strip hidden" style="margin-top: 10px; margin-bottom: 15px;">
+ <button class="tab-button tab-button-active" id="detailTabConfig" type="button">Configuration</button>
+ <button class="tab-button" id="detailTabHistory" type="button">History</button>
+ </div>
 
-            <div id="detailsPlaceholder" class="placeholder-view">
-              <div class="placeholder-icon">&#128221;</div>
-              <h4>No record selected</h4>
-              <p id="placeholderText">Select a stock item from the list to view and edit details, or click the button above the list to create a new one.</p>
-            </div>
+ <div id="detailsPlaceholder" class="placeholder-view">
+ <div class="placeholder-icon">&#128221;</div>
+ <h4>No record selected</h4>
+ <p id="placeholderText">Select a stock item from the list to view and edit details, or click the button above the list to create a new one.</p>
+ </div>
 
-            <div id="historyContainer" class="hidden"></div>
+ <div id="historyContainer" class="hidden"></div>
 
-            <form id="stockItemForm" class="data-form hidden">
-              <input type="hidden" id="stockItemId">
-              <div class="form-group">
-                <label for="stockItemName">Stock item name</label>
-                <input id="stockItemName" class="form-control" type="text" placeholder="Tomatoes" required>
-                <span class="input-helper">The name you use to identify the product (e.g. Tomatoes). Must be unique.</span>
-              </div>
-              <div class="two-column-fields">
-                <div class="form-group">
-                  <label for="stockItemCategory">Category</label>
-                  <select id="stockItemCategory" class="select-control" required>
-                    <option value="Vegetables">Vegetables</option>
-                    <option value="Dairy">Dairy</option>
-                    <option value="Meat / Protein">Meat / Protein</option>
-                    <option value="Dry Goods">Dry Goods</option>
-                    <option value="Spices">Spices</option>
-                    <option value="Beverages">Beverages</option>
-                    <option value="Packaging">Packaging</option>
-                    <option value="Cleaning Supplies">Cleaning Supplies</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <span class="input-helper">Groups items together in purchase history.</span>
-                </div>
-                <div class="form-group">
-                  <label for="stockItemDefaultUnit">Default Unit</label>
-                  <select id="stockItemDefaultUnit" class="select-control" required>
-                    <option value="kg">kg</option>
-                    <option value="g">g</option>
-                    <option value="litre">litre</option>
-                    <option value="ml">ml</option>
-                    <option value="piece">piece</option>
-                    <option value="pack">pack</option>
-                  </select>
-                  <span class="input-helper">The base unit used for billing and tracking stock levels.</span>
-                </div>
-              </div>
-              <div class="two-column-fields">
-                <div class="form-group">
-                  <label for="stockItemLowStockThreshold">Low stock threshold</label>
-                  <input id="stockItemLowStockThreshold" class="form-control" type="number" min="0" step="any" value="10" required>
-                  <span class="input-helper">Triggers a dashboard alert when remaining stock falls below this quantity.</span>
-                </div>
-                <div class="form-group toggle-row" style="margin-top: 1.5rem;">
-                  <label class="toggle-control">
-                    <input id="stockItemIsActive" type="checkbox" checked>
-                    <span>Active catalog item</span>
-                  </label>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="stockItemNotes">Notes</label>
-                <textarea id="stockItemNotes" class="form-control text-area-control" rows="3" placeholder="Storage instructions, typical shelf life, or usage notes"></textarea>
-                <span class="input-helper">Internal notes about quality, storage temperature, or shelf life.</span>
-              </div>
-              <div class="form-actions" style="display: flex; gap: 10px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">Save Stock Item</button>
-                <button type="button" class="btn btn-outline" id="stockItemResetBtn" style="flex: 1;">Cancel</button>
-                <button type="button" class="btn btn-danger hidden" id="stockItemDeleteBtn" style="flex: 0 0 auto;">Delete</button>
-              </div>
-            </form>
+ <form id="stockItemForm" class="data-form hidden">
+ <input type="hidden" id="stockItemId">
+ <div class="form-group">
+ <label for="stockItemName">Stock item name</label>
+ <input id="stockItemName" class="form-control" type="text" placeholder="Tomatoes" required>
+ <span class="input-helper">The name you use to identify the product (e.g. Tomatoes). Must be unique.</span>
+ </div>
+ <div class="two-column-fields">
+ <div class="form-group">
+ <label for="stockItemCategory">Category</label>
+ <select id="stockItemCategory" class="select-control" required>
+ <option value="Vegetables">Vegetables</option>
+ <option value="Dairy">Dairy</option>
+ <option value="Meat / Protein">Meat / Protein</option>
+ <option value="Dry Goods">Dry Goods</option>
+ <option value="Spices">Spices</option>
+ <option value="Beverages">Beverages</option>
+ <option value="Packaging">Packaging</option>
+ <option value="Cleaning Supplies">Cleaning Supplies</option>
+ <option value="Other">Other</option>
+ </select>
+ <span class="input-helper">Groups items together in purchase history.</span>
+ </div>
+ <div class="form-group">
+ <label for="stockItemDefaultUnit">Default Unit</label>
+ <select id="stockItemDefaultUnit" class="select-control" required>
+ <option value="kg">kg</option>
+ <option value="g">g</option>
+ <option value="litre">litre</option>
+ <option value="ml">ml</option>
+ <option value="piece">piece</option>
+ <option value="pack">pack</option>
+ </select>
+ <span class="input-helper">The base unit used for billing and tracking stock levels.</span>
+ </div>
+ </div>
+ <div class="two-column-fields">
+ <div class="form-group">
+ <label for="stockItemLowStockThreshold">Low stock threshold</label>
+ <input id="stockItemLowStockThreshold" class="form-control" type="number" min="0" step="any" value="10" required>
+ <span class="input-helper">Triggers a dashboard alert when remaining stock falls below this quantity.</span>
+ </div>
+ <div class="form-group toggle-row" style="margin-top: 1.5rem;">
+ <label class="toggle-control">
+ <input id="stockItemIsActive" type="checkbox" checked>
+ <span>Active catalog item</span>
+ </label>
+ </div>
+ </div>
+ <div class="form-group">
+ <label for="stockItemNotes">Notes</label>
+ <textarea id="stockItemNotes" class="form-control text-area-control" rows="3" placeholder="Storage instructions, typical shelf life, or usage notes"></textarea>
+ <span class="input-helper">Internal notes about quality, storage temperature, or shelf life.</span>
+ </div>
+ <div class="form-actions" style="display: flex; gap: 10px;">
+ <button type="submit" class="btn btn-primary" style="flex: 1;">Save Stock Item</button>
+ <button type="button" class="btn btn-outline" id="stockItemResetBtn" style="flex: 1;">Cancel</button>
+ <button type="button" class="btn btn-danger hidden" id="stockItemDeleteBtn" style="flex: 0 0 auto;">Delete</button>
+ </div>
+ </form>
 
-            <form id="vendorForm" class="data-form hidden">
-              <input type="hidden" id="vendorId">
-              <div class="form-group">
-                <label for="vendorName">Vendor name</label>
-                <input id="vendorName" class="form-control" type="text" placeholder="Fresh Produce Supplier" required>
-                <span class="input-helper">The trading name of the company or merchant (e.g. Fresh Market Supplier).</span>
-              </div>
-              <div class="two-column-fields">
-                <div class="form-group">
-                  <label for="vendorContactName">Contact name</label>
-                  <input id="vendorContactName" class="form-control" type="text" placeholder="Primary contact">
-                  <span class="input-helper">Person to contact if invoice items have mismatched prices.</span>
-                </div>
-                <div class="form-group">
-                  <label for="vendorPhone">Phone</label>
-                  <input id="vendorPhone" class="form-control" type="text" placeholder="+91 98XXXXXXXX">
-                  <span class="input-helper">Used to contact the vendor or verify details.</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="vendorCategorySupplied">Category Supplied</label>
-                <input id="vendorCategorySupplied" class="form-control" type="text" list="categorySuggestions" placeholder="Vegetables, Dairy, etc.">
-                <datalist id="categorySuggestions">
-                  <option value="Vegetables"></option>
-                  <option value="Dairy"></option>
-                  <option value="Meat / Protein"></option>
-                  <option value="Dry Goods"></option>
-                  <option value="Spices"></option>
-                  <option value="Beverages"></option>
-                  <option value="Packaging"></option>
-                  <option value="Cleaning Supplies"></option>
-                </datalist>
-                <span class="input-helper">Primary goods they supply. Pick from the list or type your own.</span>
-              </div>
-              <div class="form-group">
-                <label for="vendorNotes">Notes</label>
-                <textarea id="vendorNotes" class="form-control text-area-control" rows="4" placeholder="Preferred delivery window, payment terms, or quality notes"></textarea>
-                <span class="input-helper">Delivery window, credit period, or minimum order requirements.</span>
-              </div>
-              <div class="toggle-row">
-                <label class="toggle-control">
-                  <input id="vendorIsActive" type="checkbox" checked>
-                  <span>Active vendor</span>
-                </label>
-              </div>
-              <div class="form-actions" style="display: flex; gap: 10px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">Save Vendor</button>
-                <button type="button" class="btn btn-outline" id="vendorResetBtn" style="flex: 1;">Cancel</button>
-                <button type="button" class="btn btn-danger hidden" id="vendorDeleteBtn" style="flex: 0 0 auto;">Delete</button>
-              </div>
-            </form>
-          </section>
-        </div>
-      </section>
-    </main>
-  </div>
+ <form id="vendorForm" class="data-form hidden">
+ <input type="hidden" id="vendorId">
+ <div class="form-group">
+ <label for="vendorName">Vendor name</label>
+ <input id="vendorName" class="form-control" type="text" placeholder="Fresh Produce Supplier" required>
+ <span class="input-helper">The trading name of the company or merchant (e.g. Fresh Market Supplier).</span>
+ </div>
+ <div class="two-column-fields">
+ <div class="form-group">
+ <label for="vendorContactName">Contact name</label>
+ <input id="vendorContactName" class="form-control" type="text" placeholder="Primary contact">
+ <span class="input-helper">Person to contact if invoice items have mismatched prices.</span>
+ </div>
+ <div class="form-group">
+ <label for="vendorPhone">Phone</label>
+ <input id="vendorPhone" class="form-control" type="text" placeholder="+91 98XXXXXXXX">
+ <span class="input-helper">Used to contact the vendor or verify details.</span>
+ </div>
+ </div>
+ <div class="form-group">
+ <label for="vendorCategorySupplied">Category Supplied</label>
+ <input id="vendorCategorySupplied" class="form-control" type="text" list="categorySuggestions" placeholder="Vegetables, Dairy, etc.">
+ <datalist id="categorySuggestions">
+ <option value="Vegetables"></option>
+ <option value="Dairy"></option>
+ <option value="Meat / Protein"></option>
+ <option value="Dry Goods"></option>
+ <option value="Spices"></option>
+ <option value="Beverages"></option>
+ <option value="Packaging"></option>
+ <option value="Cleaning Supplies"></option>
+ </datalist>
+ <span class="input-helper">Primary goods they supply. Pick from the list or type your own.</span>
+ </div>
+ <div class="form-group">
+ <label for="vendorNotes">Notes</label>
+ <textarea id="vendorNotes" class="form-control text-area-control" rows="4" placeholder="Preferred delivery window, payment terms, or quality notes"></textarea>
+ <span class="input-helper">Delivery window, credit period, or minimum order requirements.</span>
+ </div>
+ <div class="toggle-row">
+ <label class="toggle-control">
+ <input id="vendorIsActive" type="checkbox" checked>
+ <span>Active vendor</span>
+ </label>
+ </div>
+ <div class="form-actions" style="display: flex; gap: 10px;">
+ <button type="submit" class="btn btn-primary" style="flex: 1;">Save Vendor</button>
+ <button type="button" class="btn btn-outline" id="vendorResetBtn" style="flex: 1;">Cancel</button>
+ <button type="button" class="btn btn-danger hidden" id="vendorDeleteBtn" style="flex: 0 0 auto;">Delete</button>
+ </div>
+ </form>
+ </section>
+ </div>
+ </section>
+ </main>
+ </div>
 
-  <div id="globalDeleteModal" class="global-modal-overlay">
-    <div class="global-modal-content">
-      <div class="global-modal-icon">⚠️</div>
-      <h3 class="global-modal-title" id="deleteModalTitle">Confirm Deletion</h3>
-      <p class="global-modal-text" id="deleteModalText">Are you sure you want to delete this record? This action cannot be undone.</p>
-      <div class="global-modal-actions">
-        <button id="cancelDeleteBtn" class="btn btn-outline">Cancel</button>
-        <button id="confirmDeleteBtn" class="btn btn-danger">Yes, Delete</button>
-      </div>
-    </div>
-  </div>
+ <div id="globalDeleteModal" class="global-modal-overlay">
+ <div class="global-modal-content">
+ <div class="global-modal-icon"> </div>
+ <h3 class="global-modal-title" id="deleteModalTitle">Confirm Deletion</h3>
+ <p class="global-modal-text" id="deleteModalText">Are you sure you want to delete this record? This action cannot be undone.</p>
+ <div class="global-modal-actions">
+ <button id="cancelDeleteBtn" class="btn btn-outline">Cancel</button>
+ <button id="confirmDeleteBtn" class="btn btn-danger">Yes, Delete</button>
+ </div>
+ </div>
+ </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="toast.js"></script>
-  <script src="master-data.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="security.js"></script>
+ <script src="toast.js"></script>
+ <script src="master-data.js"></script>
 </body>
 </html>

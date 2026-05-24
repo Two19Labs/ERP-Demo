@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Restaurant ERP · mono+red redesign</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    html, body { height: 100%; }
+    body { background: #d8d8d4; }
+    /* Canvas shell tint */
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="shared.jsx"></script>
+  <script type="text/babel" src="auth.jsx"></script>
+  <script type="text/babel" src="screens-a.jsx"></script>
+  <script type="text/babel" src="screens-b.jsx"></script>
+  <script type="text/babel" src="screens-c.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#e6332a"
+    }/*EDITMODE-END*/;
+
+    const ACCENTS = [
+      '#e6332a', // red
+      '#e89a1b', // amber
+      '#86c33a', // lime
+      '#1ab2c8'  // cyan
+    ];
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      React.useEffect(() => {
+        document.documentElement.style.setProperty('--accent', t.accent);
+      }, [t.accent]);
+
+      return (
+        <>
+          <DesignCanvas
+            background="#d8d8d4"
+            title={<span style={{ fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.2em', fontSize: 11 }}>STOCK<span style={{ color: 'var(--accent)' }}>//</span>CTRL · REDESIGN · REV.04</span>}
+            subtitle="Mono + red · all 7 screens · click any artboard to focus."
+          >
+            <DCSection id="auth" title="01 · Authentication" subtitle="One sign-in. Email + password. Same screen for owner and staff — role is determined by the account.">
+              <DCArtboard id="auth-1" label="Sign in" width={1440} height={900}>
+                <AuthScreen />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="dashboard" title="02 · Stock Dashboard" subtitle="Phase 4 · staff view · live overview.">
+              <DCArtboard id="dash-staff" label="Stock dashboard · staff" width={1440} height={900}>
+                <DashboardScreen />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="setup" title="03 · Stock Setup" subtitle="Phase 2 · items & vendors · owner edit mode.">
+              <DCArtboard id="setup-1" label="Stock setup · items" width={1440} height={900}>
+                <SetupScreen />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="capture" title="04 · Bill Capture" subtitle="Phase 5 · WhatsApp paste → AI extraction → owner queue.">
+              <DCArtboard id="cap-1" label="Bill capture · paste" width={1440} height={900}>
+                <BillCaptureScreen />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="register" title="05 · Manual Purchase Register" subtitle="Phase 3 · structured bill entry + draft receipt.">
+              <DCArtboard id="reg-1" label="Purchase register · entry" width={1440} height={900}>
+                <RegisterScreen />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="ledger" title="06 · Stock Ledger" subtitle="Phase 4 · audit trail · owner can log adjustments.">
+              <DCArtboard id="led-1" label="Stock ledger · owner" width={1440} height={900}>
+                <LedgerScreen />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="alerts" title="07 · Suspicious Bill Alerts" subtitle="Phase 7 · audit console + alert cards.">
+              <DCArtboard id="al-1" label="Suspicious bill alerts" width={1440} height={900}>
+                <AlertsScreen />
+              </DCArtboard>
+            </DCSection>
+          </DesignCanvas>
+
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="ACCENT">
+              <TweakColor
+                label="Accent color"
+                value={t.accent}
+                options={ACCENTS}
+                onChange={(v) => setTweak('accent', v)}
+              />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

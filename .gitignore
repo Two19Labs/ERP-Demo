@@ -1,1 +1,7 @@
 .claude/
+.mcp.json
+.env
+.env.*
+*.local
+.supabase/
+supabase/.temp/

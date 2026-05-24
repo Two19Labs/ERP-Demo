@@ -1,191 +1,201 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restaurant Stock Control - Stock Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="app-shell">
-  <aside class="sidebar">
-    <div class="brand-block">
-      <p class="eyebrow">Restaurant Stock Control</p>
-      <h1>Purchases, stock, and suspicious bills in one place</h1>
-    </div>
-
-    <nav class="sidebar-nav" aria-label="Primary">
-      <a class="nav-item nav-link" href="master-data.html">
-        <span>Stock Setup</span>
-      </a>
-      <a class="nav-item nav-item-active nav-link" href="dashboard.html">
-        <span>Stock Dashboard</span>
-      </a>
-      <a class="nav-item nav-link" href="bill-capture.html">
-        <span>Bill Capture</span>
-      </a>
-      <a class="nav-item nav-link" href="purchase-register.html">
-        <span>Purchase Register</span>
-      </a>
-      <a class="nav-item nav-link" href="stock-ledger.html">
-        <span>Stock Ledger</span>
-      </a>
-      <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
-        <span>Alerts</span>
-        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-note">
-      <p class="note-label">Current goal</p>
-      <p id="sidebarScope">Monitor overall stock levels, track recent entries, and identify low inventory items.</p>
-    </div>
-  </aside>
-
-  <div class="content-shell">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Phase 4</p>
-        <h2>Stock Control Dashboard</h2>
-      </div>
-
-      <div class="topbar-actions">
-        <div class="user-meta">
-          <span id="userEmail"></span>
-          <span id="userRole" class="role-pill"></span>
-        </div>
-        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
-      </div>
-    </header>
-
-    <main class="content-main">
-
-
-      <section class="hero-panel">
-        <div>
-          <p class="eyebrow">Overview</p>
-          <h3 id="welcomeTitle">Loading Stock Control...</h3>
-          <p id="welcomeText" class="supporting-text">We are fetching current balances and recent stock movements.</p>
-        </div>
-      </section>
-
-      <section class="status-grid">
-        <article class="status-card">
-          <p class="card-label">Stock value (estimate)</p>
-          <strong id="valuationDisplay">₹0.00</strong>
-          <span>Total valuation based on last purchased item prices.</span>
-        </article>
-        <article class="status-card">
-          <p class="card-label">Low stock alerts</p>
-          <strong id="lowStockCountDisplay">0</strong>
-          <span>Active items at or below low-stock threshold.</span>
-        </article>
-        <article class="status-card">
-          <p class="card-label">Bills needing review</p>
-          <strong id="pendingBillsDisplay">0</strong>
-          <span>Unapproved bills in draft or pending review.</span>
-        </article>
-      </section>
-
-      <div id="setupAlert" class="setup-alert hidden"></div>
-
-      <div class="planner-grid" style="margin-top: 20px;">
-        <!-- Left Column: Low Stock Panel -->
-        <section class="panel panel-soft">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Attention Required</p>
-              <h3>Low Stock Alerts</h3>
-            </div>
-          </div>
-          
-          <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
-            <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
-                  <th style="padding: 8px 4px;">Item</th>
-                  <th style="padding: 8px 4px;">Category</th>
-                  <th style="padding: 8px 4px; text-align: right;">Current Stock</th>
-                  <th style="padding: 8px 4px; text-align: right;">Min Limit</th>
-                  <th style="padding: 8px 4px;">Unit</th>
-                  <th style="padding: 8px 4px; text-align: center;">Status</th>
-                </tr>
-              </thead>
-              <tbody id="lowStockBody">
-                <tr>
-                  <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">Checking stock levels...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Right Column: Recent Purchases -->
-        <section class="panel panel-soft">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Purchase Registers</p>
-              <h3>Recent Purchases</h3>
-            </div>
-          </div>
-          
-          <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
-            <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
-                  <th style="padding: 8px 4px;">Date</th>
-                  <th style="padding: 8px 4px;">Vendor</th>
-                  <th style="padding: 8px 4px; text-align: right;">Bill Total</th>
-                  <th style="padding: 8px 4px; text-align: center;">Status</th>
-                </tr>
-              </thead>
-              <tbody id="recentPurchasesBody">
-                <tr>
-                  <td colspan="4" class="summary-empty" style="text-align: center; padding: 30px 10px;">Loading purchases...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-
-      <section class="overview-grid" style="margin-top: 20px;">
-        <!-- Left side: Recent Stock Movements -->
-        <section class="panel" style="grid-column: span 2;">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">Audit Trail</p>
-              <h3>Recent Stock Movements</h3>
-            </div>
-          </div>
-          <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
-            <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
-                  <th style="padding: 8px 4px;">Timestamp</th>
-                  <th style="padding: 8px 4px;">Stock Item</th>
-                  <th style="padding: 8px 4px;">Type</th>
-                  <th style="padding: 8px 4px; text-align: right;">Quantity</th>
-                  <th style="padding: 8px 4px;">Unit</th>
-                  <th style="padding: 8px 4px;">Notes / Reason</th>
-                </tr>
-              </thead>
-              <tbody id="recentMovementsBody">
-                <tr>
-                  <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">Loading movements...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-    </main>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="toast.js"></script>
-  <script src="app.js?v=6"></script>
-</body>
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Restaurant Stock Control - Stock Dashboard</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link
+ href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+ rel="stylesheet">
+ <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="app-shell">
+ <aside class="sidebar">
+ <div class="brand-block">
+ <p class="eyebrow">Restaurant Stock Control</p>
+ <h1>Purchases, stock, and suspicious bills in one place</h1>
+ </div>
+
+ <nav class="sidebar-nav" aria-label="Primary">
+ <a class="nav-item nav-item-active nav-link" href="dashboard.html">
+ <span>Stock Dashboard</span>
+ </a>
+ <a class="nav-item nav-link" href="purchase-register.html">
+ <span>Purchase Bills</span>
+ </a>
+ <a class="nav-item nav-link" href="stock-ledger.html">
+ <span>Stock Ledger</span>
+ </a>
+ <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
+ <span>Alerts</span>
+ <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+ </a>
+ <a class="nav-item nav-link" href="master-data.html">
+ <span>Stock Setup</span>
+ </a>
+ </nav>
+
+ <div class="sidebar-note">
+ <p class="note-label">Current goal</p>
+ <p id="sidebarScope">Monitor overall stock levels, track recent entries, and identify low inventory items.</p>
+ </div>
+ </aside>
+
+ <div class="content-shell">
+ <header class="topbar">
+ <div>
+ <p class="eyebrow">Phase 4</p>
+ <h2>Stock Control Dashboard</h2>
+ </div>
+
+ <div class="topbar-actions">
+ <div class="user-meta">
+ <span id="userEmail"></span>
+ <span id="userRole" class="role-pill"></span>
+ </div>
+ <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+ </div>
+ </header>
+
+ <main class="content-main">
+
+
+ <section class="hero-panel">
+ <div>
+ <p class="eyebrow">Overview</p>
+ <h3 id="welcomeTitle">Loading Stock Control...</h3>
+ <p id="welcomeText" class="supporting-text">We are fetching current balances and recent stock movements.</p>
+ </div>
+ </section>
+
+ <section class="status-grid">
+ <article class="status-card">
+ <p class="card-label">Stock value (estimate)</p>
+ <strong id="valuationDisplay">₹0.00</strong>
+ <span>Total valuation based on last purchased item prices.</span>
+ </article>
+ <article class="status-card" id="lowStockCard" style="cursor: pointer;" title="Click to view low stock items">
+ <p class="card-label">Low stock alerts</p>
+ <strong id="lowStockCountDisplay">0</strong>
+ <span>Active items at or below low-stock threshold.</span>
+ </article>
+ <article class="status-card" id="pendingBillsCard" style="cursor: pointer;" title="Click to view pending bills">
+ <p class="card-label">Bills needing review</p>
+ <strong id="pendingBillsDisplay">0</strong>
+ <span>Unapproved bills in draft or pending review.</span>
+ </article>
+ </section>
+
+ <div id="setupAlert" class="setup-alert hidden"></div>
+
+ <div class="planner-grid" style="margin-top: 20px;">
+ <!-- Left Column: Low Stock Panel -->
+ <section class="panel panel-soft">
+ <div class="panel-header">
+ <div>
+ <p class="eyebrow">Attention Required</p>
+ <h3>Low Stock Alerts</h3>
+ </div>
+ </div>
+
+ <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+ <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+ <thead>
+ <tr
+ style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+ <th style="padding: 8px 4px;">Item</th>
+ <th style="padding: 8px 4px;">Category</th>
+ <th style="padding: 8px 4px; text-align: right;">Current Stock</th>
+ <th style="padding: 8px 4px; text-align: right;">Min Limit</th>
+ <th style="padding: 8px 4px;">Unit</th>
+ <th style="padding: 8px 4px; text-align: center;">Status</th>
+ </tr>
+ </thead>
+ <tbody id="lowStockBody">
+ <tr>
+ <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">Checking stock
+ levels...</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </section>
+
+ <!-- Right Column: Recent Purchases -->
+ <section class="panel panel-soft">
+ <div class="panel-header">
+ <div>
+ <p class="eyebrow">Purchase Registers</p>
+ <h3>Recent Purchases</h3>
+ </div>
+ </div>
+
+ <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+ <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+ <thead>
+ <tr
+ style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+ <th style="padding: 8px 4px;">Date</th>
+ <th style="padding: 8px 4px;">Vendor</th>
+ <th style="padding: 8px 4px; text-align: right;">Bill Total</th>
+ <th style="padding: 8px 4px; text-align: center;">Status</th>
+ </tr>
+ </thead>
+ <tbody id="recentPurchasesBody">
+ <tr>
+ <td colspan="4" class="summary-empty" style="text-align: center; padding: 30px 10px;">Loading
+ purchases...</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </section>
+ </div>
+
+ <section class="overview-grid" style="margin-top: 20px;">
+ <!-- Left side: Recent Stock Movements -->
+ <section class="panel" style="grid-column: span 2;">
+ <div class="panel-header">
+ <div>
+ <p class="eyebrow">Audit Trail</p>
+ <h3>Recent Stock Movements</h3>
+ </div>
+ </div>
+ <div class="bill-items-table-container" style="overflow-x: auto; margin-top: 10px;">
+ <table class="bill-items-table" style="width: 100%; border-collapse: collapse;">
+ <thead>
+ <tr
+ style="border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--clay); text-align: left;">
+ <th style="padding: 8px 4px;">Timestamp</th>
+ <th style="padding: 8px 4px;">Stock Item</th>
+ <th style="padding: 8px 4px;">Type</th>
+ <th style="padding: 8px 4px; text-align: right;">Quantity</th>
+ <th style="padding: 8px 4px;">Unit</th>
+ <th style="padding: 8px 4px;">Notes / Reason</th>
+ </tr>
+ </thead>
+ <tbody id="recentMovementsBody">
+ <tr>
+ <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px;">Loading
+ movements...</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </section>
+ </section>
+ </main>
+ </div>
+
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="security.js"></script>
+ <script src="toast.js"></script>
+ <script src="bill-modal.js"></script>
+ <script src="app.js?v=6"></script>
+</body>
+
 </html>
