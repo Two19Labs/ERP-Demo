@@ -718,7 +718,7 @@ function wireWizardVoiceInput() {
       isListening = false;
       voiceBtn.classList.remove("recording");
       if (voiceBtnText) voiceBtnText.textContent = "Voice Input";
-      if (voiceMicIcon) voiceMicIcon.textContent = "🎙";
+      if (voiceMicIcon) voiceMicIcon.textContent = "";
       try {
         recognition.stop();
       } catch (err) {}
@@ -894,10 +894,10 @@ async function handleWizardOcrExtraction() {
     }
   };
 
-  setStep("wizardStepUpload", "⏳", true, false);
-  setStep("wizardStepAnalyze", "⏳", false, false);
-  setStep("wizardStepExtract", "⏳", false, false);
-  setStep("wizardStepMap", "⏳", false, false);
+  setStep("wizardStepUpload", "", true, false);
+  setStep("wizardStepAnalyze", "", false, false);
+  setStep("wizardStepExtract", "", false, false);
+  setStep("wizardStepMap", "", false, false);
 
   try {
     const uniqueName = `bill_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -913,23 +913,23 @@ async function handleWizardOcrExtraction() {
       appState.wizard.uploadUrl = urlData.publicUrl;
     }
 
-    setStep("wizardStepUpload", "✅", false, true);
-    setStep("wizardStepAnalyze", "⏳", true, false);
+    setStep("wizardStepUpload", "", false, true);
+    setStep("wizardStepAnalyze", "", true, false);
 
     let parsedResult = null;
     let extractedText = "";
     const customApiKey = localStorage.getItem("hf_api_key");
 
     if (isImage) {
-      setStep("wizardStepAnalyze", "⏳ Reading text...", true, false);
+      setStep("wizardStepAnalyze", "Reading text...", true, false);
       try {
         const result = await Tesseract.recognize(file, 'eng');
         extractedText = (result.data.text || "").trim();
       } catch (ocrErr) {
         console.warn("Tesseract OCR failed:", ocrErr);
       }
-      setStep("wizardStepAnalyze", "✅", false, true);
-      setStep("wizardStepExtract", "⏳", true, false);
+      setStep("wizardStepAnalyze", "", false, true);
+      setStep("wizardStepExtract", "", true, false);
 
       if (extractedText) {
         try {
@@ -942,17 +942,17 @@ async function handleWizardOcrExtraction() {
         parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
       }
     } else {
-      setStep("wizardStepAnalyze", "⏳", true, false);
+      setStep("wizardStepAnalyze", "", true, false);
       await new Promise(r => setTimeout(r, 600));
       parsedResult = getMockOcrData(file.name, appState.records.vendors, appState.records.stock_items);
-      setStep("wizardStepAnalyze", "✅", false, true);
-      setStep("wizardStepExtract", "⏳", true, false);
+      setStep("wizardStepAnalyze", "", false, true);
+      setStep("wizardStepExtract", "", true, false);
     }
 
-    setStep("wizardStepExtract", "✅", false, true);
-    setStep("wizardStepMap", "⏳", true, false);
+    setStep("wizardStepExtract", "", false, true);
+    setStep("wizardStepMap", "", true, false);
     await new Promise(r => setTimeout(r, 300));
-    setStep("wizardStepMap", "✅", false, true);
+    setStep("wizardStepMap", "", false, true);
 
     if (!uploadErr) {
       await supabaseClient.storage.from('bills').remove([uniqueName]);
@@ -1356,7 +1356,7 @@ function renderPriceWarning(rowElement, item) {
     if (pctDiff > 10) {
       warningBox.innerHTML = `
         <div style="color: var(--danger-color); font-size: 0.72rem; margin-top: 4px; font-weight: 500; text-align: right;">
-          ⚠️ Price spike: Last approved was ₹${lastPrice.toFixed(2)} (+${pctDiff.toFixed(0)}%)
+          Price spike: Last approved was ₹${lastPrice.toFixed(2)} (+${pctDiff.toFixed(0)}%)
         </div>
       `;
     }

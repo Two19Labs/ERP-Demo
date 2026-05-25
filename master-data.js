@@ -332,13 +332,11 @@ function renderListPanel() {
   if (!config.records.length) {
     const isOwner = appState.profile?.role_code === "owner";
     const label = tab === "stock_items" ? "stock item" : "vendor";
-    const icon = tab === "stock_items" ? "📦" : "🤝";
     const cta = isOwner
       ? `Click <strong>+ New ${tab === "stock_items" ? "Stock Item" : "Vendor"}</strong> above to add your first one.`
       : "Ask the owner to add one before submitting bills.";
     listBody.innerHTML = `
       <div class="placeholder-view" style="padding: 30px 15px;">
-        <div class="placeholder-icon" style="font-size: 2.2rem;">${icon}</div>
         <h4 style="margin: 4px 0 6px 0;">No ${label}s yet</h4>
         <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 280px; line-height: 1.4;">${cta}</p>
       </div>
@@ -549,7 +547,6 @@ async function renderStockItemHistory(stockItemId) {
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="placeholder-view" style="padding: 30px 15px;">
-          <div class="placeholder-icon" style="font-size: 2.5rem; margin-bottom: 10px;">📈</div>
           <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: var(--ink);">No approved purchases yet</h4>
           <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 280px; line-height: 1.4;">Approved purchase bills containing this stock item will populate price history and trends.</p>
         </div>
@@ -793,7 +790,6 @@ async function renderVendorHistory(vendorId) {
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="placeholder-view" style="padding: 30px 15px;">
-          <div class="placeholder-icon" style="font-size: 2.5rem; margin-bottom: 10px;">🧾</div>
           <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: var(--ink);">No approved bills yet</h4>
           <p style="margin: 0; font-size: 0.85rem; color: var(--clay); max-width: 280px; line-height: 1.4;">Approved purchase bills from this supplier will show up here as purchase history.</p>
         </div>

@@ -221,7 +221,7 @@ function renderAlertsList() {
       let statusDescription = "";
       if (alert.status === "resolved") {
         const resDate = alert.resolved_at ? new Date(alert.resolved_at).toLocaleDateString() : "recently";
-        statusDescription = `<span style="font-size:0.8rem; color:var(--leaf); font-weight:600; margin-left: 8px;">✓ Resolved ${resDate}</span>`;
+        statusDescription = `<span style="font-size:0.8rem; color:var(--leaf); font-weight:600; margin-left: 8px;">Resolved ${resDate}</span>`;
       } else if (alert.status === "dismissed") {
         statusDescription = `<span style="font-size:0.8rem; color:var(--clay); font-weight:600; margin-left: 8px;">Dismissed</span>`;
       }
@@ -398,7 +398,7 @@ async function openReviewModal(billId) {
     } else {
       document.getElementById("modalAlertsSummary").innerHTML = `
         <div style="padding: 10px 14px; border-radius: 6px; font-size: 0.88rem; border-left: 3px solid var(--leaf); background: rgba(47, 125, 95, 0.06); color: var(--leaf);">
-          ✓ No active alerts for this bill.
+          No active alerts for this bill.
         </div>
       `;
     }

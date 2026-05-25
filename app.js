@@ -288,7 +288,7 @@ function renderLowStockTable(lowStockItems) {
     body.innerHTML = `
       <tr>
         <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px; color: var(--emerald);">
-          ✓ All stock items are healthy and above their warning thresholds.
+          All stock items are healthy and above their warning thresholds.
         </td>
       </tr>
     `;
