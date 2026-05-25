@@ -2,16 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Restaurant ERP · mono+red redesign</title>
+  <title>Restaurant ERP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <style>
     html, body { height: 100%; }
-    body { background: #d8d8d4; }
-    /* Canvas shell tint */
+    body { background: #ececea; }
   </style>
 </head>
 <body>
@@ -34,11 +33,12 @@
       "accent": "#e6332a"
     }/*EDITMODE-END*/;
 
+    // Curated accent palette — warm, friendly, restaurant-y
     const ACCENTS = [
-      '#e6332a', // red
-      '#e89a1b', // amber
-      '#86c33a', // lime
-      '#1ab2c8'  // cyan
+      '#e6332a', // coral red
+      '#d97706', // amber
+      '#0f766e', // teal
+      '#4f46e5', // indigo
     ];
 
     function App() {
@@ -51,55 +51,55 @@
       return (
         <>
           <DesignCanvas
-            background="#d8d8d4"
-            title={<span style={{ fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.2em', fontSize: 11 }}>STOCK<span style={{ color: 'var(--accent)' }}>//</span>CTRL · REDESIGN · REV.04</span>}
-            subtitle="Mono + red · all 7 screens · click any artboard to focus."
+            background="#ececea"
+            title={<span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13 }}>Restaurant ERP · Simple redesign</span>}
+            subtitle="All 7 screens. Click any artboard to focus."
           >
-            <DCSection id="auth" title="01 · Authentication" subtitle="One sign-in. Email + password. Same screen for owner and staff — role is determined by the account.">
+            <DCSection id="auth" title="Sign in" subtitle="One screen for owner and staff. Role comes from the account.">
               <DCArtboard id="auth-1" label="Sign in" width={1440} height={900}>
                 <AuthScreen />
               </DCArtboard>
             </DCSection>
 
-            <DCSection id="dashboard" title="02 · Stock Dashboard" subtitle="Phase 4 · staff view · live overview.">
-              <DCArtboard id="dash-staff" label="Stock dashboard · staff" width={1440} height={900}>
+            <DCSection id="dashboard" title="Dashboard" subtitle="At-a-glance view of stock health, bills, and recent activity.">
+              <DCArtboard id="dash-staff" label="Dashboard · staff" width={1440} height={900}>
                 <DashboardScreen />
               </DCArtboard>
             </DCSection>
 
-            <DCSection id="setup" title="03 · Stock Setup" subtitle="Phase 2 · items & vendors · owner edit mode.">
+            <DCSection id="setup" title="Stock setup" subtitle="Items and vendors. Owner edit mode.">
               <DCArtboard id="setup-1" label="Stock setup · items" width={1440} height={900}>
                 <SetupScreen />
               </DCArtboard>
             </DCSection>
 
-            <DCSection id="capture" title="04 · Bill Capture" subtitle="Phase 5 · WhatsApp paste → AI extraction → owner queue.">
-              <DCArtboard id="cap-1" label="Bill capture · paste" width={1440} height={900}>
+            <DCSection id="capture" title="Bill capture" subtitle="Paste from WhatsApp → AI extracts → owner approves.">
+              <DCArtboard id="cap-1" label="Bill capture" width={1440} height={900}>
                 <BillCaptureScreen />
               </DCArtboard>
             </DCSection>
 
-            <DCSection id="register" title="05 · Manual Purchase Register" subtitle="Phase 3 · structured bill entry + draft receipt.">
-              <DCArtboard id="reg-1" label="Purchase register · entry" width={1440} height={900}>
+            <DCSection id="register" title="New purchase" subtitle="Manual bill entry with preview.">
+              <DCArtboard id="reg-1" label="New purchase" width={1440} height={900}>
                 <RegisterScreen />
               </DCArtboard>
             </DCSection>
 
-            <DCSection id="ledger" title="06 · Stock Ledger" subtitle="Phase 4 · audit trail · owner can log adjustments.">
-              <DCArtboard id="led-1" label="Stock ledger · owner" width={1440} height={900}>
+            <DCSection id="ledger" title="Stock ledger" subtitle="Audit trail of every stock movement.">
+              <DCArtboard id="led-1" label="Stock ledger" width={1440} height={900}>
                 <LedgerScreen />
               </DCArtboard>
             </DCSection>
 
-            <DCSection id="alerts" title="07 · Suspicious Bill Alerts" subtitle="Phase 7 · audit console + alert cards.">
-              <DCArtboard id="al-1" label="Suspicious bill alerts" width={1440} height={900}>
+            <DCSection id="alerts" title="Alerts" subtitle="Suspicious bills and unusual activity.">
+              <DCArtboard id="al-1" label="Alerts" width={1440} height={900}>
                 <AlertsScreen />
               </DCArtboard>
             </DCSection>
           </DesignCanvas>
 
           <TweaksPanel title="Tweaks">
-            <TweakSection label="ACCENT">
+            <TweakSection label="Accent">
               <TweakColor
                 label="Accent color"
                 value={t.accent}
