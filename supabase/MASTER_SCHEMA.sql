@@ -220,7 +220,7 @@ AS $$
   select exists (
     select 1 from public.purchase_bills b
     where b.id = target_bill_id
-      and (private.is_owner() or b.created_by = (select auth.uid()))
+      and private.is_active_app_user()
   )
 $$;
 
@@ -585,9 +585,10 @@ CREATE POLICY "owners can manage purchase bills" ON public.purchase_bills
   FOR ALL TO authenticated USING (private.is_owner()) WITH CHECK (private.is_owner());
 
 DROP POLICY IF EXISTS "staff can read own purchase bills" ON public.purchase_bills;
-CREATE POLICY "staff can read own purchase bills" ON public.purchase_bills
+DROP POLICY IF EXISTS "active users can read purchase bills" ON public.purchase_bills;
+CREATE POLICY "active users can read purchase bills" ON public.purchase_bills
   FOR SELECT TO authenticated
-  USING (created_by = (SELECT auth.uid()) AND private.is_active_app_user());
+  USING (private.is_active_app_user());
 
 DROP POLICY IF EXISTS "staff can create purchase bills" ON public.purchase_bills;
 CREATE POLICY "staff can create purchase bills" ON public.purchase_bills
