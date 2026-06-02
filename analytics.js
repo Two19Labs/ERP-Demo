@@ -27,6 +27,13 @@ const analyticsState = {
 
 const charts = {}; // id -> Chart instance
 
+// Per-chart click targets, kept in sync on each render so chart onClick
+// handlers can deep-link to the clicked entity's page.
+const clickIndex = { vendorIds: [], itemIds: [], statusKeys: [] };
+
+// Navigate helper.
+function go(url) { window.location.href = url; }
+
 let supabaseClient;
 if (window.supabase) {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -108,7 +115,24 @@ async function setup(user) {
   }
 
   document.getElementById("analyticsRoot").classList.remove("hidden");
+  wireKpiLinks();
   applyPreset("30"); // default range + first load
+}
+
+// KPI cards jump to the page that backs the metric.
+function wireKpiLinks() {
+  const links = {
+    kpiSpend: "purchase-register.html?status=approved",
+    kpiBills: "purchase-register.html?status=approved",
+    kpiAvg: "purchase-register.html?status=approved",
+    kpiWastage: "stock-ledger.html"
+  };
+  Object.entries(links).forEach(([id, url]) => {
+    const card = document.getElementById(id)?.closest(".kpi-card");
+    if (!card) return;
+    card.classList.add("clickable");
+    card.addEventListener("click", () => go(url));
+  });
 }
 
 // ── Date range helpers ──────────────────────────────────────────────
@@ -194,7 +218,7 @@ async function loadAnalytics() {
         .select("status, bill_date").gte("bill_date", fromDate).lte("bill_date", toDate),
       // approved bill items in range (category / item spend)
       supabaseClient.from("purchase_bill_items")
-        .select("line_total, stock_items(name, category), purchase_bills!inner(bill_date, status)")
+        .select("line_total, stock_items(id, name, category), purchase_bills!inner(bill_date, status)")
         .eq("purchase_bills.status", "approved")
         .gte("purchase_bills.bill_date", fromDate).lte("purchase_bills.bill_date", toDate),
       // stock movements in range
@@ -301,6 +325,9 @@ function renderSpendChart(bills) {
   const labels = dateSpan();
   const data = labels.map((d) => byDay[d] || 0);
 
+  const opts = baseLineOpts(moneyTick, (ctx) => inr(ctx.parsed.y));
+  opts.onClick = () => go("purchase-register.html?status=approved");
+
   draw("chartSpend", {
     type: "line",
     data: {
@@ -316,7 +343,7 @@ function renderSpendChart(bills) {
         pointBackgroundColor: C.accent
       }]
     },
-    options: baseLineOpts(moneyTick, (ctx) => inr(ctx.parsed.y))
+    options: opts
   });
 }
 
@@ -354,6 +381,7 @@ function renderMovementsChart(movements) {
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
+      onClick: () => go("stock-ledger.html"),
       scales: {
         x: { stacked: true, grid: { display: false }, ticks: tickStyle() },
         y: { stacked: true, grid: { color: C.line }, ticks: tickStyle() }
@@ -382,6 +410,7 @@ function renderCategoryChart(items) {
     },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: "62%",
+      onClick: () => go("purchase-register.html?status=approved"),
       plugins: {
         legend: legendStyle("right"),
         tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${inr(ctx.parsed)}` } }
@@ -391,24 +420,32 @@ function renderCategoryChart(items) {
 }
 
 function renderVendorChart(bills) {
-  const map = {};
+  const map = {}; // vendor_id -> { name, total }
   bills.forEach((b) => {
-    const v = b.vendors?.name || "Unknown";
-    map[v] = (map[v] || 0) + Number(b.total || 0);
+    const id = b.vendor_id || "unknown";
+    const name = b.vendors?.name || "Unknown";
+    if (!map[id]) map[id] = { name, total: 0 };
+    map[id].total += Number(b.total || 0);
   });
-  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const entries = Object.entries(map).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
   const empty = entries.length === 0;
   toggleEmpty("chartVendor", "chartVendorEmpty", empty);
   if (empty) { if (charts.chartVendor) charts.chartVendor.destroy(); return; }
 
+  clickIndex.vendorIds = entries.map((e) => e[0]);
+
   draw("chartVendor", {
     type: "bar",
     data: {
-      labels: entries.map((e) => escapeHtml(e[0])),
-      datasets: [{ label: "Spend", data: entries.map((e) => e[1]), backgroundColor: C.ink, borderWidth: 0, borderRadius: 4 }]
+      labels: entries.map((e) => escapeHtml(e[1].name)),
+      datasets: [{ label: "Spend", data: entries.map((e) => e[1].total), backgroundColor: C.ink, borderWidth: 0, borderRadius: 4 }]
     },
     options: {
       indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      onClick: (evt, els) => {
+        const id = els[0] && clickIndex.vendorIds[els[0].index];
+        go(id && id !== "unknown" ? `purchase-register.html?vendor_id=${encodeURIComponent(id)}` : "purchase-register.html?status=approved");
+      },
       scales: { x: { grid: { color: C.line }, ticks: { ...tickStyle(), callback: moneyTick } }, y: { grid: { display: false }, ticks: tickStyle() } },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => inr(ctx.parsed.x) } } }
     }
@@ -416,24 +453,32 @@ function renderVendorChart(bills) {
 }
 
 function renderItemsChart(items) {
-  const map = {};
+  const map = {}; // stock_item_id -> { name, total }
   items.forEach((it) => {
+    const id = it.stock_items?.id || "unknown";
     const name = it.stock_items?.name || "Unknown";
-    map[name] = (map[name] || 0) + Number(it.line_total || 0);
+    if (!map[id]) map[id] = { name, total: 0 };
+    map[id].total += Number(it.line_total || 0);
   });
-  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const entries = Object.entries(map).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
   const empty = entries.length === 0;
   toggleEmpty("chartItems", "chartItemsEmpty", empty);
   if (empty) { if (charts.chartItems) charts.chartItems.destroy(); return; }
 
+  clickIndex.itemIds = entries.map((e) => e[0]);
+
   draw("chartItems", {
     type: "bar",
     data: {
-      labels: entries.map((e) => escapeHtml(e[0])),
-      datasets: [{ label: "Spend", data: entries.map((e) => e[1]), backgroundColor: C.accent, borderWidth: 0, borderRadius: 4 }]
+      labels: entries.map((e) => escapeHtml(e[1].name)),
+      datasets: [{ label: "Spend", data: entries.map((e) => e[1].total), backgroundColor: C.accent, borderWidth: 0, borderRadius: 4 }]
     },
     options: {
       indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      onClick: (evt, els) => {
+        const id = els[0] && clickIndex.itemIds[els[0].index];
+        go(id && id !== "unknown" ? `stock-ledger.html?item_id=${encodeURIComponent(id)}` : "stock-ledger.html");
+      },
       scales: { x: { grid: { color: C.line }, ticks: { ...tickStyle(), callback: moneyTick } }, y: { grid: { display: false }, ticks: tickStyle() } },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => inr(ctx.parsed.x) } } }
     }
@@ -450,13 +495,22 @@ function renderStatusChart(bills) {
   toggleEmpty("chartStatus", "chartStatusEmpty", empty);
   if (empty) { if (charts.chartStatus) charts.chartStatus.destroy(); return; }
 
+  clickIndex.statusKeys = keys;
+
   draw("chartStatus", {
     type: "doughnut",
     data: {
       labels: keys.map((k) => labelMap[k] || k),
       datasets: [{ data: keys.map((k) => map[k]), backgroundColor: keys.map((k) => colorMap[k] || C.muted), borderWidth: 2, borderColor: "#fff" }]
     },
-    options: { responsive: true, maintainAspectRatio: false, cutout: "62%", plugins: { legend: legendStyle("right") } }
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "62%",
+      onClick: (evt, els) => {
+        const k = els[0] && clickIndex.statusKeys[els[0].index];
+        go(k ? `purchase-register.html?status=${encodeURIComponent(k)}` : "purchase-register.html");
+      },
+      plugins: { legend: legendStyle("right") }
+    }
   });
 }
 

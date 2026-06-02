@@ -218,7 +218,37 @@ async function loadRegisterData() {
 
   renderSetupAlert();
   populateVendorFilter();
+  applyUrlShortcuts();
   applyFiltersAndRender();
+}
+
+// Deep-link shortcuts coming from the Analytics page:
+//   ?vendor_id=<uuid>  -> preselect a vendor
+//   ?status=<status>   -> activate a status tab
+function applyUrlShortcuts() {
+  const params = new URLSearchParams(window.location.search);
+
+  const vendorParam = params.get("vendor_id");
+  if (vendorParam) {
+    const sel = document.getElementById("filterVendorSelect");
+    if (sel) sel.value = vendorParam;
+  }
+
+  const statusParam = params.get("status");
+  const tabMap = {
+    pending_review: "filterStatusPending",
+    approved: "filterStatusApproved",
+    rejected: "filterStatusRejected",
+    all: "filterStatusAll"
+  };
+  const tabId = tabMap[statusParam];
+  const tabBtn = tabId ? document.getElementById(tabId) : null;
+  if (tabBtn) {
+    ["filterStatusAll", "filterStatusPending", "filterStatusApproved", "filterStatusRejected"]
+      .forEach((id) => document.getElementById(id)?.classList.remove("tab-button-active"));
+    tabBtn.classList.add("tab-button-active");
+    appState.activeStatusFilter = statusParam;
+  }
 }
 
 function populateVendorFilter() {

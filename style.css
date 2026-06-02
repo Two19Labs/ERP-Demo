@@ -1324,7 +1324,11 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
   gap: 16px;
   margin-top: 16px;
 }
-.chart-canvas-wrap { position: relative; height: 300px; }
+.chart-canvas-wrap { position: relative; height: 300px; cursor: pointer; }
+.kpi-card.clickable { cursor: pointer; transition: border-color .12s, transform .12s; }
+.kpi-card.clickable:hover { border-color: var(--ink); transform: translateY(-1px); }
+.chart-card { transition: border-color .12s; }
+.chart-card:hover { border-color: var(--ink-2); }
 .chart-canvas-sm { height: 260px; }
 .chart-canvas-wrap canvas { animation: chartFade .35s ease; }
 .chart-empty { text-align: center; color: var(--muted); padding: 40px 10px; font-size: 13px; }
