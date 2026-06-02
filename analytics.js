@@ -301,8 +301,7 @@ function wireKpiLinks() {
     kpiBillsCard: "purchase-register.html?status=approved",
     kpiAvgCard: "purchase-register.html?status=approved",
     kpiWastageCard: "stock-ledger.html",
-    kpiItemCountCard: "purchase-register.html?status=approved",
-    kpiTopVendorCard: "purchase-register.html?status=approved"
+    kpiItemCountCard: "purchase-register.html?status=approved"
   };
   Object.entries(links).forEach(([id, url]) => {
     const card = document.getElementById(id);
@@ -571,17 +570,6 @@ function renderKpis() {
   const priorItemIds = new Set();
   cache.priorBillItems.forEach((it) => { if (it.stock_item_id) priorItemIds.add(it.stock_item_id); });
   const priorItemCount = priorItemIds.size;
-
-  // Top vendor
-  const vendorMap = {};
-  bills.forEach((b) => {
-    const vid = b.vendor_id || "unknown";
-    const vname = b.vendors?.name || "Unknown";
-    if (!vendorMap[vid]) vendorMap[vid] = { name: vname, total: 0 };
-    vendorMap[vid].total += Number(b.total || 0);
-  });
-  const topVendor = Object.values(vendorMap).sort((a, b) => b.total - a.total)[0];
-
   const priorSpend = priorBills.reduce((s, b) => s + Number(b.total || 0), 0);
   const priorCount = priorBills.length;
   const priorAvg = priorCount ? priorSpend / priorCount : 0;
@@ -592,10 +580,6 @@ function renderKpis() {
   setKpi("kpiAvg", inr(avg), "kpiAvgDelta", avg, priorAvg, true);
   setKpi("kpiWastage", String(wastage), "kpiWastageDelta", wastage, priorWastage, false);
   setKpi("kpiItemCount", String(itemCount), "kpiItemCountDelta", itemCount, priorItemCount, true);
-
-  // Top vendor (special rendering)
-  document.getElementById("kpiTopVendorAmount").textContent = topVendor ? inr(topVendor.total) : "₹0";
-  document.getElementById("kpiTopVendorName").textContent = topVendor ? topVendor.name : "—";
 }
 
 function setKpi(valId, valText, deltaId, current, prior, moreIsGood) {
