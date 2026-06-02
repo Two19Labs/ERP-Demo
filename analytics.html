@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Restaurant Stock Control - Analytics</title>
+  <meta name="description" content="Spend analytics, stock movement trends, wastage tracking, and vendor insights for restaurant owners.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -94,73 +95,158 @@
             <label>To <input type="date" id="toDate"></label>
             <button class="btn btn-outline" id="applyCustom" type="button">Apply</button>
           </div>
+          <label class="compare-toggle" id="compareToggleLabel">
+            <input type="checkbox" id="comparePriorToggle">
+            <span class="compare-toggle-track"><span class="compare-toggle-thumb"></span></span>
+            <span class="compare-toggle-text">vs prior period</span>
+          </label>
           <div class="date-range-label" id="rangeLabel"></div>
         </section>
 
         <div id="setupAlert" class="setup-alert hidden"></div>
 
-        <!-- KPI row -->
-        <section class="kpi-grid">
-          <article class="kpi-card">
+        <!-- KPI row (6 cards) -->
+        <section class="kpi-grid" id="kpiGrid">
+          <article class="kpi-card" id="kpiSpendCard">
             <p class="card-label">Total spend</p>
             <strong id="kpiSpend">&#8377;0</strong>
             <span class="kpi-delta" id="kpiSpendDelta"></span>
           </article>
-          <article class="kpi-card">
+          <article class="kpi-card" id="kpiBillsCard">
             <p class="card-label">Approved bills</p>
             <strong id="kpiBills">0</strong>
             <span class="kpi-delta" id="kpiBillsDelta"></span>
           </article>
-          <article class="kpi-card">
+          <article class="kpi-card" id="kpiAvgCard">
             <p class="card-label">Avg bill value</p>
             <strong id="kpiAvg">&#8377;0</strong>
             <span class="kpi-delta" id="kpiAvgDelta"></span>
           </article>
-          <article class="kpi-card">
+          <article class="kpi-card" id="kpiWastageCard">
             <p class="card-label">Wastage events</p>
             <strong id="kpiWastage">0</strong>
             <span class="kpi-delta" id="kpiWastageDelta"></span>
           </article>
+          <article class="kpi-card" id="kpiItemCountCard">
+            <p class="card-label">Items purchased</p>
+            <strong id="kpiItemCount">0</strong>
+            <span class="kpi-delta" id="kpiItemCountDelta"></span>
+          </article>
+          <article class="kpi-card" id="kpiTopVendorCard">
+            <p class="card-label">Top vendor</p>
+            <strong id="kpiTopVendorAmount">&#8377;0</strong>
+            <span class="kpi-sub" id="kpiTopVendorName">&mdash;</span>
+          </article>
         </section>
 
-        <!-- Full-width spend over time -->
-        <section class="panel chart-card chart-card-wide">
+        <!-- Full-width: Spend trend -->
+        <section class="panel chart-card chart-card-wide" id="spendTrendSection">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Spend trend</p>
-              <h3>Daily purchase spend</h3>
+              <h3>Purchase spend over time</h3>
+            </div>
+            <div class="chart-controls">
+              <select class="chart-select" id="spendViewSelect">
+                <option value="total">Total Spend</option>
+                <option value="category">By Category</option>
+                <option value="vendor">By Vendor</option>
+              </select>
             </div>
           </div>
           <div class="chart-canvas-wrap"><canvas id="chartSpend"></canvas></div>
           <p class="chart-empty hidden" id="chartSpendEmpty">No approved purchases in this range.</p>
         </section>
 
-        <!-- Full-width stock movements -->
-        <section class="panel chart-card chart-card-wide">
+        <!-- Full-width: Usage vs Wastage -->
+        <section class="panel chart-card chart-card-wide" id="usageWastageSection">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Stock flow</p>
-              <h3>Stock movements by day</h3>
+              <h3>Usage vs Wastage</h3>
+            </div>
+            <div class="chart-controls">
+              <select class="chart-select" id="usageItemSelect">
+                <option value="all">All Items</option>
+              </select>
             </div>
           </div>
-          <div class="chart-canvas-wrap"><canvas id="chartMovements"></canvas></div>
-          <p class="chart-empty hidden" id="chartMovementsEmpty">No stock movements in this range.</p>
+          <div class="chart-canvas-wrap"><canvas id="chartUsageWastage"></canvas></div>
+          <p class="chart-empty hidden" id="chartUsageWastageEmpty">No usage or wastage data in this range.</p>
         </section>
 
-        <!-- 2-col grid of breakdowns -->
+        <!-- 2-col: Spend Breakdown + Monthly Comparison -->
         <div class="chart-grid">
-          <section class="panel chart-card">
+          <section class="panel chart-card" id="breakdownSection">
             <div class="panel-header">
               <div>
                 <p class="eyebrow">Where money goes</p>
-                <h3>Spend by category</h3>
+                <h3>Spend breakdown</h3>
+              </div>
+              <div class="chart-controls">
+                <select class="chart-select" id="breakdownViewSelect">
+                  <option value="category">By Category</option>
+                  <option value="vendor">By Vendor</option>
+                  <option value="item">By Item (Top 10)</option>
+                </select>
               </div>
             </div>
-            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartCategory"></canvas></div>
-            <p class="chart-empty hidden" id="chartCategoryEmpty">No category spend in this range.</p>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartBreakdown"></canvas></div>
+            <p class="chart-empty hidden" id="chartBreakdownEmpty">No spend data in this range.</p>
           </section>
 
-          <section class="panel chart-card">
+          <section class="panel chart-card" id="monthlyComparisonSection">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Period comparison</p>
+                <h3>Current vs prior period</h3>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartMonthlyComparison"></canvas></div>
+            <p class="chart-empty hidden" id="chartMonthlyComparisonEmpty">No data to compare.</p>
+          </section>
+        </div>
+
+        <!-- 2-col: Top Items + Price Tracker -->
+        <div class="chart-grid">
+          <section class="panel chart-card" id="topItemsSection">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Most purchased</p>
+                <h3>Top items</h3>
+              </div>
+              <div class="chart-controls">
+                <select class="chart-select" id="topItemsMetric">
+                  <option value="spend">By Spend</option>
+                  <option value="quantity">By Quantity</option>
+                  <option value="frequency">By Purchase Count</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartTopItems"></canvas></div>
+            <p class="chart-empty hidden" id="chartTopItemsEmpty">No item purchases in this range.</p>
+          </section>
+
+          <section class="panel chart-card" id="priceTrackerSection">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Price watch</p>
+                <h3>Item price tracker</h3>
+              </div>
+              <div class="chart-controls">
+                <select class="chart-select" id="priceItemSelect">
+                  <option value="">Select an item&hellip;</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartPriceTracker"></canvas></div>
+            <p class="chart-empty hidden" id="chartPriceTrackerEmpty">Select an item to see its price history.</p>
+          </section>
+        </div>
+
+        <!-- 2-col: Vendor Spend + Bills Pipeline -->
+        <div class="chart-grid">
+          <section class="panel chart-card" id="vendorSpendSection">
             <div class="panel-header">
               <div>
                 <p class="eyebrow">Top suppliers</p>
@@ -171,18 +257,7 @@
             <p class="chart-empty hidden" id="chartVendorEmpty">No vendor spend in this range.</p>
           </section>
 
-          <section class="panel chart-card">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Most bought</p>
-                <h3>Top items by value</h3>
-              </div>
-            </div>
-            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartItems"></canvas></div>
-            <p class="chart-empty hidden" id="chartItemsEmpty">No item purchases in this range.</p>
-          </section>
-
-          <section class="panel chart-card">
+          <section class="panel chart-card" id="statusSection">
             <div class="panel-header">
               <div>
                 <p class="eyebrow">Bill pipeline</p>
@@ -203,7 +278,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="security.js"></script>
   <script src="toast.js"></script>
-  <script src="analytics.js?v=2"></script>
+  <script src="analytics.js?v=3"></script>
 </body>
 
 </html>

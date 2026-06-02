@@ -1295,9 +1295,52 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .date-custom input[type="date"]:focus { outline: none; border-color: var(--ink); }
 .date-range-label { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
+/* Compare-to-prior toggle */
+.compare-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.compare-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.compare-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background .2s ease;
+  flex-shrink: 0;
+}
+.compare-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+.compare-toggle input:checked + .compare-toggle-track {
+  background: #3b82f6;
+}
+.compare-toggle input:checked + .compare-toggle-track .compare-toggle-thumb {
+  transform: translateX(16px);
+}
+.compare-toggle-text {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* KPI grid — auto-fill for flexible 6-card layout */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 16px;
   margin-top: 16px;
 }
@@ -1315,6 +1358,46 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .kpi-delta-up { color: var(--ok); }
 .kpi-delta-down { color: var(--bad); }
 .kpi-delta-flat { color: var(--muted); }
+.kpi-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chart controls (dropdown row inside chart headers) */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.chart-select {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 28px 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  outline: none;
+  transition: border-color .12s;
+  width: auto;
+  min-width: 0;
+}
+.chart-select:hover { border-color: var(--ink-2); }
+.chart-select:focus { border-color: var(--ink); }
 
 .chart-card { margin-top: 16px; }
 .chart-card-wide { width: 100%; }
@@ -1342,4 +1425,5 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 @media (max-width: 640px) {
   .kpi-grid { grid-template-columns: 1fr; }
   .date-range-label { margin-left: 0; }
+  .compare-toggle-text { display: none; }
 }
