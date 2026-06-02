@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Stock Control - Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">Restaurant Stock Control</p>
+      <h1>Purchases, stock, and suspicious bills in one place</h1>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a class="nav-item nav-link" href="dashboard.html">
+        <span>Stock Dashboard</span>
+      </a>
+      <a class="nav-item nav-item-active nav-link" href="analytics.html">
+        <span>Analytics</span>
+      </a>
+      <a class="nav-item nav-link" href="purchase-register.html">
+        <span>Purchase Bills</span>
+      </a>
+      <a class="nav-item nav-link" href="stock-ledger.html">
+        <span>Stock Ledger</span>
+      </a>
+      <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
+        <span>Alerts</span>
+        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+      </a>
+      <a class="nav-item nav-link" href="master-data.html">
+        <span>Stock Setup</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-note">
+      <p class="note-label">Current goal</p>
+      <p>Track spend, stock movement, and wastage trends over any date range.</p>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Insights</p>
+        <h2>Analytics</h2>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <span id="userEmail"></span>
+          <span id="userRole" class="role-pill"></span>
+        </div>
+        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="content-main">
+
+      <!-- Owner-only gate message -->
+      <section id="accessDenied" class="hero-panel hidden">
+        <div>
+          <p class="eyebrow">Restricted</p>
+          <h3>Analytics is owner-only</h3>
+          <p class="supporting-text">This area shows spend and vendor financials. Ask an owner for access, or
+            head back to the <a href="dashboard.html" style="color: var(--accent);">Stock Dashboard</a>.</p>
+        </div>
+      </section>
+
+      <!-- Everything below hidden until owner verified -->
+      <div id="analyticsRoot" class="hidden">
+
+        <!-- Date filter bar -->
+        <section class="date-filter-bar">
+          <div class="date-presets" id="datePresets">
+            <button class="date-preset" data-range="7">7D</button>
+            <button class="date-preset date-preset-active" data-range="30">30D</button>
+            <button class="date-preset" data-range="90">90D</button>
+            <button class="date-preset" data-range="month">This Month</button>
+          </div>
+          <div class="date-custom">
+            <label>From <input type="date" id="fromDate"></label>
+            <label>To <input type="date" id="toDate"></label>
+            <button class="btn btn-outline" id="applyCustom" type="button">Apply</button>
+          </div>
+          <div class="date-range-label" id="rangeLabel"></div>
+        </section>
+
+        <div id="setupAlert" class="setup-alert hidden"></div>
+
+        <!-- KPI row -->
+        <section class="kpi-grid">
+          <article class="kpi-card">
+            <p class="card-label">Total spend</p>
+            <strong id="kpiSpend">&#8377;0</strong>
+            <span class="kpi-delta" id="kpiSpendDelta"></span>
+          </article>
+          <article class="kpi-card">
+            <p class="card-label">Approved bills</p>
+            <strong id="kpiBills">0</strong>
+            <span class="kpi-delta" id="kpiBillsDelta"></span>
+          </article>
+          <article class="kpi-card">
+            <p class="card-label">Avg bill value</p>
+            <strong id="kpiAvg">&#8377;0</strong>
+            <span class="kpi-delta" id="kpiAvgDelta"></span>
+          </article>
+          <article class="kpi-card">
+            <p class="card-label">Wastage events</p>
+            <strong id="kpiWastage">0</strong>
+            <span class="kpi-delta" id="kpiWastageDelta"></span>
+          </article>
+        </section>
+
+        <!-- Full-width spend over time -->
+        <section class="panel chart-card chart-card-wide">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Spend trend</p>
+              <h3>Daily purchase spend</h3>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap"><canvas id="chartSpend"></canvas></div>
+          <p class="chart-empty hidden" id="chartSpendEmpty">No approved purchases in this range.</p>
+        </section>
+
+        <!-- Full-width stock movements -->
+        <section class="panel chart-card chart-card-wide">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Stock flow</p>
+              <h3>Stock movements by day</h3>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap"><canvas id="chartMovements"></canvas></div>
+          <p class="chart-empty hidden" id="chartMovementsEmpty">No stock movements in this range.</p>
+        </section>
+
+        <!-- 2-col grid of breakdowns -->
+        <div class="chart-grid">
+          <section class="panel chart-card">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Where money goes</p>
+                <h3>Spend by category</h3>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartCategory"></canvas></div>
+            <p class="chart-empty hidden" id="chartCategoryEmpty">No category spend in this range.</p>
+          </section>
+
+          <section class="panel chart-card">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Top suppliers</p>
+                <h3>Spend by vendor</h3>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartVendor"></canvas></div>
+            <p class="chart-empty hidden" id="chartVendorEmpty">No vendor spend in this range.</p>
+          </section>
+
+          <section class="panel chart-card">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Most bought</p>
+                <h3>Top items by value</h3>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartItems"></canvas></div>
+            <p class="chart-empty hidden" id="chartItemsEmpty">No item purchases in this range.</p>
+          </section>
+
+          <section class="panel chart-card">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Bill pipeline</p>
+                <h3>Bills by status</h3>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap chart-canvas-sm"><canvas id="chartStatus"></canvas></div>
+            <p class="chart-empty hidden" id="chartStatusEmpty">No bills in this range.</p>
+          </section>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="security.js"></script>
+  <script src="toast.js"></script>
+  <script src="analytics.js?v=1"></script>
+</body>
+
+</html>
