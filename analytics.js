@@ -145,10 +145,12 @@ function fmt(d) {
   return `${y}-${m}-${day}`;
 }
 
-function applyPreset(range) {
+async function applyPreset(range) {
   const today = new Date();
   let from;
-  if (range === "month") {
+  if (range === "all") {
+    from = await earliestDataDate();
+  } else if (range === "month") {
     from = new Date(today.getFullYear(), today.getMonth(), 1);
   } else {
     const days = Number(range);
@@ -160,6 +162,26 @@ function applyPreset(range) {
   analyticsState.preset = range;
   syncInputs();
   loadAnalytics();
+}
+
+// Earliest date across bills + movements, so "All time" bounds the charts
+// to real data instead of an arbitrary far-past date.
+async function earliestDataDate() {
+  const fallback = new Date();
+  fallback.setFullYear(fallback.getFullYear() - 1);
+  try {
+    const [bill, mv] = await Promise.all([
+      supabaseClient.from("purchase_bills").select("bill_date").order("bill_date", { ascending: true }).limit(1),
+      supabaseClient.from("stock_movements").select("created_at").order("created_at", { ascending: true }).limit(1)
+    ]);
+    const dates = [];
+    if (bill.data?.[0]?.bill_date) dates.push(new Date(bill.data[0].bill_date));
+    if (mv.data?.[0]?.created_at) dates.push(new Date(mv.data[0].created_at));
+    if (!dates.length) return fallback;
+    return new Date(Math.min(...dates.map((d) => d.getTime())));
+  } catch (_) {
+    return fallback;
+  }
 }
 
 function syncInputs() {
@@ -299,16 +321,46 @@ function draw(id, config) {
   charts[id] = new Chart(document.getElementById(id), config);
 }
 
-// Build a continuous list of YYYY-MM-DD between range (for time charts).
-function dateSpan() {
+// How many days the active range spans.
+function rangeDays() {
+  return Math.round((new Date(analyticsState.toDate) - new Date(analyticsState.fromDate)) / 86400000) + 1;
+}
+// Long ranges bucket by month so the time charts stay readable.
+function isMonthly() {
+  return rangeDays() > 92;
+}
+// Bucket key for a 'YYYY-MM-DD...' date string: month ('YYYY-MM') or day ('YYYY-MM-DD').
+function bucketKey(dateStr) {
+  return isMonthly() ? dateStr.slice(0, 7) : dateStr.slice(0, 10);
+}
+// Ordered list of bucket keys spanning the active range.
+function bucketSpan() {
   const out = [];
-  const d = new Date(analyticsState.fromDate);
-  const end = new Date(analyticsState.toDate);
-  while (d <= end) {
-    out.push(fmt(d));
-    d.setDate(d.getDate() + 1);
+  if (isMonthly()) {
+    const d = new Date(analyticsState.fromDate);
+    d.setDate(1);
+    const end = new Date(analyticsState.toDate);
+    while (d <= end) {
+      out.push(fmt(d).slice(0, 7));
+      d.setMonth(d.getMonth() + 1);
+    }
+  } else {
+    const d = new Date(analyticsState.fromDate);
+    const end = new Date(analyticsState.toDate);
+    while (d <= end) {
+      out.push(fmt(d));
+      d.setDate(d.getDate() + 1);
+    }
   }
   return out;
+}
+// Human label for a bucket key.
+function bucketLabel(key) {
+  if (key.length === 7) {
+    const [y, m] = key.split("-");
+    return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+  }
+  return new Date(key).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
 const moneyTick = (v) => "₹" + Number(v).toLocaleString("en-IN");
@@ -320,10 +372,11 @@ function renderSpendChart(bills) {
   toggleEmpty("chartSpend", "chartSpendEmpty", empty);
   if (empty) { if (charts.chartSpend) charts.chartSpend.destroy(); return; }
 
-  const byDay = {};
-  bills.forEach((b) => { byDay[b.bill_date] = (byDay[b.bill_date] || 0) + Number(b.total || 0); });
-  const labels = dateSpan();
-  const data = labels.map((d) => byDay[d] || 0);
+  const byKey = {};
+  bills.forEach((b) => { const k = bucketKey(b.bill_date); byKey[k] = (byKey[k] || 0) + Number(b.total || 0); });
+  const keys = bucketSpan();
+  const labels = keys.map(bucketLabel);
+  const data = keys.map((k) => byKey[k] || 0);
 
   const opts = baseLineOpts(moneyTick, (ctx) => inr(ctx.parsed.y));
   opts.onClick = () => go("purchase-register.html?status=approved");
@@ -352,7 +405,8 @@ function renderMovementsChart(movements) {
   toggleEmpty("chartMovements", "chartMovementsEmpty", empty);
   if (empty) { if (charts.chartMovements) charts.chartMovements.destroy(); return; }
 
-  const labels = dateSpan();
+  const keys = bucketSpan();
+  const labels = keys.map(bucketLabel);
   const types = [
     { key: "purchase_added", label: "Purchase", color: C.ok },
     { key: "usage", label: "Usage", color: C.ink },
@@ -361,12 +415,12 @@ function renderMovementsChart(movements) {
     { key: "return_to_vendor", label: "Return", color: C.muted },
     { key: "correction", label: "Correction", color: "#2563eb" }
   ];
-  const idx = Object.fromEntries(labels.map((d, i) => [d, i]));
-  const series = Object.fromEntries(types.map((t) => [t.key, new Array(labels.length).fill(0)]));
+  const idx = Object.fromEntries(keys.map((k, i) => [k, i]));
+  const series = Object.fromEntries(types.map((t) => [t.key, new Array(keys.length).fill(0)]));
   movements.forEach((m) => {
-    const day = m.created_at.slice(0, 10);
-    if (idx[day] === undefined || !series[m.movement_type]) return;
-    series[m.movement_type][idx[day]] += Number(m.quantity || 0);
+    const k = bucketKey(m.created_at);
+    if (idx[k] === undefined || !series[m.movement_type]) return;
+    series[m.movement_type][idx[k]] += Number(m.quantity || 0);
   });
   const present = types.filter((t) => series[t.key].some((v) => v > 0));
 
