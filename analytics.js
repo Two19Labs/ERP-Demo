@@ -51,10 +51,10 @@ const CHART_PALETTE = [
 ];
 
 const C = {
-  ink: "#18181b",
-  muted: "#71717a",
-  line: "#ececec",
-  accent: "#e6332a"
+  get ink() { return document.body.classList.contains("dark-theme") || document.documentElement.classList.contains("dark-theme") ? "#f4f4f5" : "#18181b"; },
+  get muted() { return document.body.classList.contains("dark-theme") || document.documentElement.classList.contains("dark-theme") ? "#a1a1aa" : "#71717a"; },
+  get line() { return document.body.classList.contains("dark-theme") || document.documentElement.classList.contains("dark-theme") ? "#27272a" : "#ececec"; },
+  get accent() { return "#e6332a"; }
 };
 
 // ── State ───────────────────────────────────────────────────────────
@@ -1181,3 +1181,10 @@ function hideSetupError() {
   const el = document.getElementById("setupAlert");
   if (el) { el.classList.add("hidden"); el.textContent = ""; }
 }
+
+// Redraw charts when theme changes
+window.addEventListener("themeChanged", () => {
+  if (typeof renderAll === "function") {
+    renderAll();
+  }
+});

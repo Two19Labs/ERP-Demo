@@ -54,6 +54,38 @@
   --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
+body.dark-theme {
+  --bg: #09090b;
+  --surface: #18181b;
+  --surface-2: #1e1e21;
+  --ink: #f4f4f5;
+  --ink-2: #e4e4e7;
+  --muted: #a1a1aa;
+  --muted-2: #71717a;
+  --border: #27272a;
+  --border-2: #1f1f23;
+  --sidebar-bg: #09090b;
+  --sidebar-border: #27272a;
+  --accent-soft: #2e0f0f;
+  --ok-soft: #052e16;
+  --warn-soft: #451a03;
+  --bad-soft: #450a0a;
+}
+
+body.dark-theme ::placeholder {
+  color: var(--muted-2) !important;
+}
+
+body.dark-theme .tbl th, 
+body.dark-theme .bill-items-table th {
+  background: var(--surface-2) !important;
+}
+
+body.dark-theme .modal-overlay, 
+body.dark-theme .global-modal-overlay {
+  background: rgba(0, 0, 0, 0.6) !important;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; }
 
