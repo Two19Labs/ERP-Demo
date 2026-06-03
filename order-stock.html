@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Stock Control - Order Stock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .order-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 1000px) {
+      .order-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .whatsapp-preview {
+      width: 100%;
+      background: #fcfcf9;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-family: inherit;
+      font-size: 13.5px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.5;
+      color: var(--ink-2);
+      white-space: pre-wrap;
+      min-height: 150px;
+    }
+    .badge-low-stock {
+      background: var(--bad-soft);
+      color: var(--bad);
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-out-stock {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .item-select-checkbox {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .order-qty-input {
+      width: 80px;
+      padding: 4px 8px;
+      text-align: right;
+    }
+    .whatsapp-color-btn {
+      background: #25d366 !important;
+      border-color: #25d366 !important;
+      color: white !important;
+      font-weight: 600 !important;
+    }
+    .whatsapp-color-btn:hover {
+      background: #128c7e !important;
+      border-color: #128c7e !important;
+      color: white !important;
+    }
+    .card-meta-detail {
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: var(--ink-2);
+    }
+    .card-meta-detail strong {
+      color: var(--ink);
+    }
+    .btn-suggest-vendor {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      height: auto;
+    }
+  </style>
+</head>
+<body class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">Restaurant Stock Control</p>
+      <h1>Purchases, stock, and suspicious bills in one place</h1>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a class="nav-item nav-link" href="dashboard.html">
+        <span>Stock Dashboard</span>
+      </a>
+      <a class="nav-item nav-link" href="analytics.html">
+        <span>Analytics</span>
+      </a>
+      <a class="nav-item nav-link" href="purchase-register.html">
+        <span>Purchase Bills</span>
+      </a>
+      <a class="nav-item nav-link" href="stock-ledger.html">
+        <span>Stock Ledger</span>
+      </a>
+      <a class="nav-item nav-link" href="alerts.html" id="navAlerts">
+        <span>Alerts</span>
+        <span class="nav-badge hidden" id="alertsCountBadge">0</span>
+      </a>
+      <a class="nav-item nav-item-active nav-link" href="order-stock.html" id="navOrderStock">
+        <span>Order Stock</span>
+      </a>
+      <a class="nav-item nav-link" href="master-data.html">
+        <span>Stock Setup</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-note">
+      <p class="note-label">Current goal</p>
+      <p id="sidebarScope">Prepare and coordinate restock requests with vendors using direct WhatsApp channels.</p>
+    </div>
+  </aside>
+
+  <div class="content-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Phase 10</p>
+        <h2>WhatsApp Stock Ordering</h2>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <span id="userEmail"></span>
+          <span id="userRole" class="role-pill"></span>
+        </div>
+        <button id="logoutBtn" class="btn btn-outline" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="content-main">
+      <div id="setupAlert" class="setup-alert hidden"></div>
+
+      <div class="order-grid">
+        <!-- Left Panel: Select Items -->
+        <section class="panel">
+          <div class="panel-header panel-header-spread" style="margin-bottom: 20px;">
+            <div>
+              <p class="eyebrow">Inventory Checklist</p>
+              <h3>Select Stock Items</h3>
+            </div>
+            <label class="toggle-control">
+              <input type="checkbox" id="filterLowStockOnly">
+              <span>Show Low Stock Only</span>
+            </label>
+          </div>
+
+          <!-- Filters -->
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="searchStockItems" class="form-control" placeholder="Search stock items..." style="flex: 1;">
+            <select id="filterCategory" class="select-control" style="max-width: 200px;">
+              <option value="">All Categories</option>
+              <!-- Categories dynamically populated -->
+            </select>
+          </div>
+
+          <!-- Items Table -->
+          <div class="bill-items-table-container" style="overflow-x: auto;">
+            <table class="bill-items-table" id="stockItemsTable">
+              <thead>
+                <tr>
+                  <th style="width: 40px; padding: 12px 8px; text-align: center;">Select</th>
+                  <th style="padding: 12px 8px;">Item Name</th>
+                  <th style="padding: 12px 8px;">Category</th>
+                  <th style="padding: 12px 8px; text-align: right;">Current Stock</th>
+                  <th style="padding: 12px 8px; text-align: right;">Min Limit</th>
+                  <th style="padding: 12px 8px;">Unit</th>
+                  <th style="padding: 12px 8px;">Last Vendor</th>
+                  <th style="padding: 12px 8px; text-align: right; width: 100px;">Order Qty</th>
+                </tr>
+              </thead>
+              <tbody id="stockItemsBody">
+                <tr>
+                  <td colspan="8" class="summary-empty" style="text-align: center; padding: 40px 10px;">Loading stock items...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Right Panels: Vendor & Order Summary -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <!-- Vendor Selection Panel -->
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Supplier</p>
+                <h3>Select Vendor</h3>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="vendorSelect">Choose Vendor <span class="required">*</span></label>
+              <select id="vendorSelect" class="select-control">
+                <option value="">Choose a vendor...</option>
+                <!-- Dynamically loaded -->
+              </select>
+            </div>
+
+            <div id="vendorDetailsCard" class="card-quiet hidden" style="margin-top: 15px; padding: 16px;">
+              <h4 id="vendorDetailName" style="font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--ink);">Vendor Name</h4>
+              <div class="card-meta-detail">Contact: <strong id="vendorDetailContact">-</strong></div>
+              <div class="card-meta-detail">Phone: <strong id="vendorDetailPhone">-</strong></div>
+              <div class="card-meta-detail">Category: <strong id="vendorDetailCategory">-</strong></div>
+              <div id="vendorDetailNotes" class="supporting-text" style="margin-top: 10px; font-size: 12.5px;">-</div>
+            </div>
+          </section>
+
+          <!-- Live WhatsApp Preview Panel -->
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Message Draft</p>
+                <h3>WhatsApp Order Preview</h3>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 15px;">
+              <div class="form-group">
+                <label for="customGreeting">Additional Note / Greeting (Optional)</label>
+                <input type="text" id="customGreeting" class="form-control" placeholder="e.g. Please deliver by tomorrow morning">
+              </div>
+
+              <div>
+                <label class="fld-label">Message Content Preview</label>
+                <div id="whatsappPreview" class="whatsapp-preview">No items selected or no vendor chosen.</div>
+              </div>
+
+              <button id="sendOrderBtn" class="btn btn-primary whatsapp-color-btn" type="button" style="width: 100%; height: 46px;" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16" style="margin-right: 4px;">
+                  <path d="M13.601 2.326A7.854 7.854 0 0 0 .79 10.398l-1.883 6.878 7.022-1.84a7.853 7.853 0 0 0 3.793-.973l.048-.029 4.192 1.099-1.1-4.017-.029-.047A7.854 7.854 0 0 0 13.601 2.326zM11.83 11.454c-.181.189-.457.26-.713.21-.29-.059-.579-.204-.836-.37-.764-.492-1.428-1.157-1.92-1.92-.165-.257-.31-.546-.37-.836a.872.872 0 0 1 .21-.713l.317-.318a.386.386 0 0 0 0-.546L7.697 5.617a.386.386 0 0 0-.546 0L6.7 6.07c-.452.453-.59 1.098-.385 1.693.364 1.055.975 2.013 1.777 2.815.802.802 1.76 1.413 2.815 1.777.595.205 1.24.067 1.693-.385l.453-.453a.386.386 0 0 0 0-.546l-1.326-1.326a.386.386 0 0 0-.546 0l-.318.318z"/>
+                </svg>
+                Order via WhatsApp
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="security.js"></script>
+  <script src="toast.js"></script>
+  <script src="order-stock.js"></script>
+</body>
+</html>

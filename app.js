@@ -212,12 +212,53 @@ async function loadDashboardData() {
       .order("created_at", { ascending: false })
       .limit(10);
 
+    // 6. Fetch last approved vendor for each stock item
+    const { data: lastPurchases, error: err6 } = await supabaseClient
+      .from("purchase_bill_items")
+      .select(`
+        stock_item_id,
+        purchase_bills !inner (
+          bill_date,
+          vendor_id,
+          vendors (
+            id,
+            name,
+            phone,
+            contact_name
+          )
+        )
+      `)
+      .eq("purchase_bills.status", "approved");
+
     appState.records.balances = balances || [];
     appState.records.recentBills = recentBills || [];
     appState.records.recentMovements = recentMovements || [];
     appState.records.pendingBillsCount = pendingBillsCount || 0;
 
-    appState.setupError = (err1 || err2 || err3 || err4 || err5)?.message || "";
+    // Deduce the last vendor for each stock item
+    const lastVendorsMap = {};
+    if (lastPurchases && lastPurchases.length > 0) {
+      const sortedPurchases = [...lastPurchases].sort((a, b) => {
+        const dateA = new Date(a.purchase_bills?.bill_date || 0);
+        const dateB = new Date(b.purchase_bills?.bill_date || 0);
+        return dateB - dateA;
+      });
+      sortedPurchases.forEach(item => {
+        const itemId = item.stock_item_id;
+        const vendor = item.purchase_bills?.vendors;
+        if (itemId && vendor && !lastVendorsMap[itemId]) {
+          lastVendorsMap[itemId] = {
+            id: vendor.id,
+            name: vendor.name,
+            phone: vendor.phone,
+            contact_name: vendor.contact_name
+          };
+        }
+      });
+    }
+    appState.records.lastVendorsMap = lastVendorsMap;
+
+    appState.setupError = (err1 || err2 || err3 || err4 || err5 || err6)?.message || "";
     renderSetupAlert();
 
     // Process rates to find last price for each stock item
@@ -287,7 +328,7 @@ function renderLowStockTable(lowStockItems) {
   if (lowStockItems.length === 0) {
     body.innerHTML = `
       <tr>
-        <td colspan="6" class="summary-empty" style="text-align: center; padding: 30px 10px; color: var(--emerald);">
+        <td colspan="7" class="summary-empty" style="text-align: center; padding: 30px 10px; color: var(--emerald);">
           All stock items are healthy and above their warning thresholds.
         </td>
       </tr>
@@ -303,14 +344,48 @@ function renderLowStockTable(lowStockItems) {
         ? `<span class="record-pill record-pill-rejected" style="font-size: 0.7rem; padding: 2px 6px;">Out of Stock</span>`
         : `<span class="record-pill record-pill-pending" style="font-size: 0.7rem; padding: 2px 6px;">Low Stock</span>`;
 
+      const recommendedQty = Math.max(1, Math.ceil(threshold - stockQty));
+      const lastVendor = appState.records.lastVendorsMap?.[item.stock_item_id];
+      
+      let actionCell = "";
+      if (lastVendor && lastVendor.phone) {
+        const cleanPhone = formatWhatsAppNumber(lastVendor.phone);
+        const contactName = lastVendor.contact_name || lastVendor.name;
+        const msgText = `Hello ${contactName},\n\nI would like to place an order for:\n- *${item.name}*: ${recommendedQty} ${item.default_unit}\n\nPlease confirm. Thanks!`;
+        const encodedMsg = encodeURIComponent(msgText);
+        const waLink = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
+        
+        actionCell = `
+          <td style="padding: 10px 4px; text-align: center;">
+            <a href="${waLink}" target="_blank" class="btn btn-outline btn-small" 
+               style="font-size: 0.72rem; padding: 4px 8px; font-weight: 600; background: #25d366; border-color: #25d366; color: white; border-radius: 4px; text-decoration: none; display: inline-block;"
+               title="Order from ${escapeHtml(lastVendor.name)} via WhatsApp">
+              Order WhatsApp
+            </a>
+          </td>
+        `;
+      } else {
+        actionCell = `
+          <td style="padding: 10px 4px; text-align: center;">
+            <a href="order-stock.html?item_id=${item.stock_item_id}&qty=${recommendedQty}" 
+               class="btn btn-outline btn-small" 
+               style="font-size: 0.72rem; padding: 4px 8px; border-radius: 4px; text-decoration: none; display: inline-block;"
+               title="Setup order on standalone page">
+              Order Setup
+            </a>
+          </td>
+        `;
+      }
+
       return `
       <tr>
-        <td style="padding: 10px 4px;"><strong>${item.name}</strong></td>
-        <td style="padding: 10px 4px; color: var(--clay);">${item.category}</td>
+        <td style="padding: 10px 4px;"><strong>${escapeHtml(item.name)}</strong></td>
+        <td style="padding: 10px 4px; color: var(--clay);">${escapeHtml(item.category)}</td>
         <td style="padding: 10px 4px; text-align: right; font-weight: bold; color: var(--crimson);">${stockQty.toFixed(3)}</td>
         <td style="padding: 10px 4px; text-align: right; color: var(--clay);">${threshold.toFixed(3)}</td>
-        <td style="padding: 10px 4px; color: var(--clay);">${item.default_unit}</td>
+        <td style="padding: 10px 4px; color: var(--clay);">${escapeHtml(item.default_unit)}</td>
         <td style="padding: 10px 4px; text-align: center;">${statusPill}</td>
+        ${actionCell}
       </tr>
     `;
     })
@@ -451,5 +526,24 @@ async function loadActiveAlertsBadge() {
   } catch (err) {
     console.error('Failed to load active alerts badge:', err);
   }
+}
+
+function formatWhatsAppNumber(phone) {
+  if (!phone) return "";
+  let clean = phone.replace(/\D/g, "");
+  if (clean.length === 10) {
+    clean = "91" + clean;
+  }
+  return clean;
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
